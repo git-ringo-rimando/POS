@@ -5,7 +5,7 @@ const bcrypt = require('bcryptjs');
 const db = require('./database');
 
 const app = express();
-const SECRET = 'pos_jwt_secret_2024_secure_key';
+const SECRET = process.env.JWT_SECRET || 'pos_jwt_secret_2024_secure_key';
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
