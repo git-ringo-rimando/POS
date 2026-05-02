@@ -1,0 +1,9 @@
+Admin: admin / admin123  |  Cashier: cashier1 / cashier123
+manager1 / Password: manager123     123456
+
+
+
+  POS System running at http://localhost:3000                                                                                                                   
+       Admin login:   admin / admin123                                                                                                                               
+       Cashier login: cashier1 / cashier123                                                                                                                          
+                                                 
