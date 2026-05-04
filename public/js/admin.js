@@ -184,7 +184,9 @@ function renderProductsTable() {
         </td>
       </tr>`;
   }).join('');
-  tbody.querySelectorAll('[data-edit]').forEach(btn => openProductModal(allProducts.find(p => p.id === parseInt(btn.dataset.edit))));
+  tbody.querySelectorAll('[data-edit]').forEach(btn => {
+    btn.addEventListener('click', () => openProductModal(allProducts.find(p => p.id === parseInt(btn.dataset.edit))));
+  });
   tbody.querySelectorAll('[data-delete]').forEach(btn => {
     btn.addEventListener('click', () => {
       const p = allProducts.find(x => x.id === parseInt(btn.dataset.delete));
