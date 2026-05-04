@@ -120,12 +120,14 @@ app.delete('/api/products/:id', auth, adminOnly, async (req, res) => {
   const id = parseInt(req.params.id);
   const [product] = await sql`SELECT * FROM products WHERE id=${id}`;
   if (!product) return res.status(404).json({ error: 'Product not found' });
-  await sql.begin(async sql => {
-    await sql`INSERT INTO product_history (product_id, action, product_name, sku, category, cost_price, selling_price, stock, min_stock, unit, changed_by_name) VALUES (${product.id}, 'deleted', ${product.name}, ${product.sku}, ${product.category}, ${product.cost_price}, ${product.selling_price}, ${product.stock}, ${product.min_stock}, ${product.unit}, ${req.user.full_name || req.user.username})`;
-    await sql`DELETE FROM inventory_logs WHERE product_id=${id}`;
-    await sql`DELETE FROM products WHERE id=${id}`;
-  });
-  res.json({ success: true });
+  try {
+    await sql.begin(async sql => {
+      await sql`INSERT INTO product_history (product_id, action, product_name, sku, category, cost_price, selling_price, stock, min_stock, unit, changed_by_name) VALUES (${product.id}, 'deleted', ${product.name}, ${product.sku}, ${product.category}, ${product.cost_price}, ${product.selling_price}, ${product.stock}, ${product.min_stock}, ${product.unit}, ${req.user.full_name || req.user.username})`;
+      await sql`DELETE FROM inventory_logs WHERE product_id=${id}`;
+      await sql`DELETE FROM products WHERE id=${id}`;
+    });
+    res.json({ success: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 // ── Inventory ──────────────────────────────────────────────────────────────────
