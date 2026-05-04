@@ -188,14 +188,29 @@ function renderProductsTable() {
     btn.addEventListener('click', () => openProductModal(allProducts.find(p => p.id === parseInt(btn.dataset.edit))));
   });
   tbody.querySelectorAll('[data-delete]').forEach(btn => {
+    let confirmed = false;
+    let timer = null;
     btn.addEventListener('click', async () => {
+      if (!confirmed) {
+        confirmed = true;
+        btn.textContent = 'Confirm?';
+        btn.classList.replace('btn-danger', 'btn-warning');
+        timer = setTimeout(() => {
+          confirmed = false;
+          btn.textContent = 'Delete';
+          btn.classList.replace('btn-warning', 'btn-danger');
+        }, 3000);
+        return;
+      }
+      clearTimeout(timer);
       try {
         const pid = parseInt(btn.getAttribute('data-delete'));
         const p = allProducts.find(x => x.id === pid);
         if (!p) { await loadProducts(); return; }
-        if (!window.confirm(`Delete "${p.name}"? This cannot be undone.`)) return;
+        btn.disabled = true;
+        btn.textContent = 'Deleting…';
         await api.delete('/products/' + p.id);
-        toast.success('Product deleted');
+        toast.success(`"${p.name}" deleted`);
         await loadProducts();
       } catch (e) { toast.error(e.message || 'Failed to delete product'); }
     });
@@ -482,8 +497,15 @@ async function renderInvLinksList(productId) {
         </div>`;
     }).join('');
     container.querySelectorAll('[data-delete-link]').forEach(btn => {
+      let confirmed = false; let timer = null;
       btn.addEventListener('click', async () => {
-        if (!window.confirm('Remove this inventory link?')) return;
+        if (!confirmed) {
+          confirmed = true;
+          btn.textContent = 'Confirm?';
+          timer = setTimeout(() => { confirmed = false; btn.textContent = 'Remove'; }, 3000);
+          return;
+        }
+        clearTimeout(timer);
         try {
           await api.delete('/inventory/links/' + btn.getAttribute('data-delete-link'));
           toast.success('Link removed');
@@ -614,9 +636,18 @@ function renderOrdersTable() {
     btn.addEventListener('click', () => viewOrder(parseInt(btn.dataset.viewOrder)));
   });
   tbody.querySelectorAll('[data-delete-order]').forEach(btn => {
+    let confirmed = false; let timer = null;
     btn.addEventListener('click', async () => {
-      if (!window.confirm(`Delete order "${btn.dataset.orderNum}"?\n\nThis will permanently remove the transaction and restore inventory stock.`)) return;
+      if (!confirmed) {
+        confirmed = true;
+        btn.textContent = 'Confirm?';
+        btn.classList.replace('btn-danger', 'btn-warning');
+        timer = setTimeout(() => { confirmed = false; btn.textContent = 'Delete'; btn.classList.replace('btn-warning', 'btn-danger'); }, 3000);
+        return;
+      }
+      clearTimeout(timer);
       try {
+        btn.disabled = true; btn.textContent = 'Deleting…';
         await api.delete('/orders/' + btn.dataset.deleteOrder);
         toast.success(`Order ${btn.dataset.orderNum} deleted. Inventory restored.`);
         loadOrders();
@@ -824,8 +855,16 @@ async function loadUsers() {
       });
     });
     tbody.querySelectorAll('[data-delete-user]').forEach(btn => {
+      let confirmed = false; let timer = null;
       btn.addEventListener('click', async () => {
-        if (!window.confirm(`Delete user "${btn.dataset.username}"?`)) return;
+        if (!confirmed) {
+          confirmed = true;
+          btn.textContent = 'Confirm?';
+          btn.classList.replace('btn-danger', 'btn-warning');
+          timer = setTimeout(() => { confirmed = false; btn.textContent = 'Delete'; btn.classList.replace('btn-warning', 'btn-danger'); }, 3000);
+          return;
+        }
+        clearTimeout(timer);
         try { await api.delete('/users/' + btn.dataset.deleteUser); toast.success('User deleted'); loadUsers(); } catch (e) { toast.error(e.message); }
       });
     });
@@ -906,7 +945,15 @@ function renderCategoriesTable() {
       const name = btn.dataset.catName;
       const cat = allCategories.find(c => c.id === parseInt(btn.dataset.deleteCat));
       const count = cat?.product_count || 0;
-      if (!window.confirm(`Delete category "${name}"?${count > 0 ? `\n\n${count} product(s) will be moved to "General".` : ''}`)) return;
+      if (!btn.dataset.confirmed) {
+        btn.dataset.confirmed = '1';
+        const orig = btn.textContent;
+        btn.textContent = count > 0 ? `Confirm? (moves ${count})` : 'Confirm?';
+        btn.classList.replace('btn-danger', 'btn-warning');
+        setTimeout(() => { delete btn.dataset.confirmed; btn.textContent = orig; btn.classList.replace('btn-warning', 'btn-danger'); }, 3000);
+        return;
+      }
+      delete btn.dataset.confirmed;
       try {
         await api.delete('/categories/' + btn.dataset.deleteCat);
         toast.success(`Category "${name}" deleted`);
