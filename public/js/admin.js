@@ -188,11 +188,10 @@ function renderProductsTable() {
     btn.addEventListener('click', () => openProductModal(allProducts.find(p => p.id === parseInt(btn.dataset.edit))));
   });
   tbody.querySelectorAll('[data-delete]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const p = allProducts.find(x => x.id === parseInt(btn.dataset.delete));
-      confirm(`Delete "${p.name}"? This cannot be undone.`, async () => {
-        try { await api.delete('/products/' + p.id); toast.success('Product deleted'); loadProducts(); } catch (e) { toast.error(e.message); }
-      });
+    btn.addEventListener('click', async () => {
+      const p = allProducts.find(x => x.id === parseInt(btn.getAttribute('data-delete')));
+      if (!window.confirm(`Delete "${p.name}"? This cannot be undone.`)) return;
+      try { await api.delete('/products/' + p.id); toast.success('Product deleted'); loadProducts(); } catch (e) { toast.error(e.message); }
     });
   });
 }
@@ -609,14 +608,13 @@ function renderOrdersTable() {
     btn.addEventListener('click', () => viewOrder(parseInt(btn.dataset.viewOrder)));
   });
   tbody.querySelectorAll('[data-delete-order]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      confirm(`Delete order "${btn.dataset.orderNum}"?\n\nThis will permanently remove the transaction and restore inventory stock.`, async () => {
-        try {
-          await api.delete('/orders/' + btn.dataset.deleteOrder);
-          toast.success(`Order ${btn.dataset.orderNum} deleted. Inventory restored.`);
-          loadOrders();
-        } catch (e) { toast.error(e.message); }
-      });
+    btn.addEventListener('click', async () => {
+      if (!window.confirm(`Delete order "${btn.dataset.orderNum}"?\n\nThis will permanently remove the transaction and restore inventory stock.`)) return;
+      try {
+        await api.delete('/orders/' + btn.dataset.deleteOrder);
+        toast.success(`Order ${btn.dataset.orderNum} deleted. Inventory restored.`);
+        loadOrders();
+      } catch (e) { toast.error(e.message); }
     });
   });
 }
@@ -820,10 +818,9 @@ async function loadUsers() {
       });
     });
     tbody.querySelectorAll('[data-delete-user]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        confirm(`Delete user "${btn.dataset.username}"?`, async () => {
-          try { await api.delete('/users/' + btn.dataset.deleteUser); toast.success('User deleted'); loadUsers(); } catch (e) { toast.error(e.message); }
-        });
+      btn.addEventListener('click', async () => {
+        if (!window.confirm(`Delete user "${btn.dataset.username}"?`)) return;
+        try { await api.delete('/users/' + btn.dataset.deleteUser); toast.success('User deleted'); loadUsers(); } catch (e) { toast.error(e.message); }
       });
     });
   } catch (e) { toast.error('Failed to load users'); }
@@ -899,19 +896,18 @@ function renderCategoriesTable() {
     btn.addEventListener('click', () => openCategoryModal({ id: parseInt(btn.dataset.renameCat), name: btn.dataset.catName }));
   });
   tbody.querySelectorAll('[data-delete-cat]').forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', async () => {
       const name = btn.dataset.catName;
       const cat = allCategories.find(c => c.id === parseInt(btn.dataset.deleteCat));
       const count = cat?.product_count || 0;
-      confirm(`Delete category "${name}"?${count > 0 ? `\n\n${count} product(s) will be moved to "General".` : ''}`, async () => {
-        try {
-          await api.delete('/categories/' + btn.dataset.deleteCat);
-          toast.success(`Category "${name}" deleted`);
-          loadCategories();
-          allProducts = await api.get('/products');
-          updateCategoryFilters();
-        } catch (e) { toast.error(e.message); }
-      });
+      if (!window.confirm(`Delete category "${name}"?${count > 0 ? `\n\n${count} product(s) will be moved to "General".` : ''}`)) return;
+      try {
+        await api.delete('/categories/' + btn.dataset.deleteCat);
+        toast.success(`Category "${name}" deleted`);
+        loadCategories();
+        allProducts = await api.get('/products');
+        updateCategoryFilters();
+      } catch (e) { toast.error(e.message); }
     });
   });
 }
