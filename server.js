@@ -78,8 +78,13 @@ app.put('/api/users/:id', auth, adminOnly, async (req, res) => {
 app.delete('/api/users/:id', auth, adminOnly, async (req, res) => {
   const id = parseInt(req.params.id);
   if (id === req.user.id) return res.status(400).json({ error: 'Cannot delete your own account' });
-  await sql`DELETE FROM users WHERE id=${id}`;
-  res.json({ success: true });
+  const [{ c }] = await sql`SELECT COUNT(*)::int as c FROM orders WHERE user_id = ${id}`;
+  if (c > 0) return res.status(409).json({ error: 'Cannot delete: user has transaction history. Deactivate instead.' });
+  try {
+    await sql`DELETE FROM inventory_logs WHERE user_id = ${id}`;
+    await sql`DELETE FROM users WHERE id=${id}`;
+    res.json({ success: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 // ── Products ───────────────────────────────────────────────────────────────────
@@ -375,13 +380,15 @@ app.delete('/api/categories/:id', auth, adminOnly, async (req, res) => {
   const id = parseInt(req.params.id);
   const [cat] = await sql`SELECT * FROM categories WHERE id=${id}`;
   if (!cat) return res.status(404).json({ error: 'Category not found' });
-  await sql.begin(async sql => {
-    await sql`UPDATE products SET category='General', updated_at=CURRENT_TIMESTAMP WHERE category=${cat.name}`;
-    await sql`INSERT INTO category_archive (category_name, action, old_name, changed_by_name) VALUES (${cat.name}, 'deleted', ${null}, ${req.user.full_name || req.user.username})`;
-    await sql`DELETE FROM categories WHERE id=${id}`;
-    await sql`INSERT INTO categories (name) VALUES ('General') ON CONFLICT DO NOTHING`;
-  });
-  res.json({ success: true });
+  try {
+    await sql.begin(async sql => {
+      await sql`UPDATE products SET category='General', updated_at=CURRENT_TIMESTAMP WHERE category=${cat.name}`;
+      await sql`INSERT INTO category_archive (category_name, action, old_name, changed_by_name) VALUES (${cat.name}, 'deleted', ${null}, ${req.user.full_name || req.user.username})`;
+      await sql`DELETE FROM categories WHERE id=${id}`;
+      await sql`INSERT INTO categories (name) VALUES ('General') ON CONFLICT DO NOTHING`;
+    });
+    res.json({ success: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 app.get('/api/category-archive', auth, adminOnly, async (req, res) => {
@@ -425,6 +432,12 @@ app.get('/api/reports/summary', auth, adminOrManager, async (req, res) => {
 app.get('*', (req, res) => {
   if (req.path.startsWith('/api/')) return res.status(404).json({ error: 'Not found' });
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// Global error handler — catches unhandled errors from all async routes
+app.use((err, req, res, next) => {
+  if (res.headersSent) return next(err);
+  res.status(500).json({ error: err.message || 'Internal server error' });
 });
 
 if (process.env.NODE_ENV !== 'production') {

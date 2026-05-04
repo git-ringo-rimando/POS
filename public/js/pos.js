@@ -109,6 +109,7 @@ function updateQty(productId, delta) {
   const item = cart.find(i => i.product_id === productId);
   if (!item) return;
   const product = products.find(p => p.id === productId);
+  if (!product) { removeFromCart(productId); return; }
   const newQty = item.quantity + delta;
   if (newQty <= 0) { removeFromCart(productId); return; }
   if (newQty > product.stock) { toast.warning(`Only ${product.stock} ${product.unit} available`); return; }
