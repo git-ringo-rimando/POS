@@ -209,11 +209,8 @@ function openProductModal(product = null) {
   document.getElementById('pCategory').value = product?.category || '';
   document.getElementById('pCost').value = product?.cost_price ?? '';
   document.getElementById('pPrice').value = product?.selling_price ?? '';
-  document.getElementById('pStock').value = product?.stock ?? '';
   document.getElementById('pMinStock').value = product?.min_stock ?? 5;
   document.getElementById('pUnit').value = product?.unit || 'pcs';
-  document.getElementById('pStock').disabled = !!product;
-  document.getElementById('pStock').title = product ? 'Use Inventory to adjust stock' : '';
   updateMarginPreview();
   document.getElementById('productModal').classList.remove('hidden');
 }
@@ -244,7 +241,6 @@ document.getElementById('saveProductBtn').addEventListener('click', async () => 
     category: document.getElementById('pCategory').value.trim() || 'General',
     cost_price: parseFloat(document.getElementById('pCost').value),
     selling_price: parseFloat(document.getElementById('pPrice').value),
-    stock: parseInt(document.getElementById('pStock').value) || 0,
     min_stock: parseInt(document.getElementById('pMinStock').value) || 5,
     unit: document.getElementById('pUnit').value.trim() || 'pcs'
   };
@@ -267,11 +263,47 @@ document.getElementById('saveProductBtn').addEventListener('click', async () => 
 // ══════════════════════════════════════════════════════════════════════════════
 let inventoryProducts = [];
 
+function showLowStockPopup(products) {
+  document.getElementById('lowStockPopup')?.remove();
+  if (!products.length) return;
+  const popup = document.createElement('div');
+  popup.id = 'lowStockPopup';
+  popup.style.cssText = `
+    position:fixed;top:20px;right:20px;z-index:9999;
+    background:#fff;border:2px solid #f59e0b;border-radius:12px;
+    box-shadow:0 8px 32px rgba(0,0,0,0.18);padding:16px 20px;
+    min-width:280px;max-width:360px;animation:fadeIn .2s ease;
+  `;
+  popup.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <div style="display:flex;align-items:center;gap:8px;font-weight:700;color:#92400e;font-size:15px">
+        <span style="font-size:20px">⚠️</span> Low Stock Alert
+      </div>
+      <button onclick="document.getElementById('lowStockPopup').remove()"
+        style="background:none;border:none;font-size:18px;cursor:pointer;color:#9ca3af;line-height:1">✕</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px">
+      ${products.map(p => `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;background:#fef3c7;border-radius:6px">
+          <span style="font-size:13px;font-weight:600;color:#374151">${p.name}</span>
+          <span style="font-size:12px;color:${p.stock === 0 ? '#ef4444' : '#d97706'};font-weight:700">
+            ${p.stock === 0 ? 'Out of stock' : `${p.stock} ${p.unit} left`}
+          </span>
+        </div>`).join('')}
+    </div>
+    <div style="margin-top:10px;font-size:11px;color:#9ca3af;text-align:right">Click ✕ to dismiss</div>
+  `;
+  document.body.appendChild(popup);
+  setTimeout(() => popup.remove(), 10000);
+}
+
 async function loadInventory() {
   try {
     inventoryProducts = await api.get('/products');
     renderInventoryTable();
     populateAdjustSelect();
+    const lowStock = inventoryProducts.filter(p => p.stock <= p.min_stock);
+    if (lowStock.length) showLowStockPopup(lowStock);
   } catch (e) { toast.error('Failed to load inventory'); }
 }
 
@@ -526,6 +558,10 @@ document.getElementById('saveAdjustBtn').addEventListener('click', async () => {
     const res = await api.post('/inventory/adjust', { product_id, type, quantity, notes });
     toast.success(`Stock updated: ${res.previous_stock} → ${res.new_stock}`);
     document.getElementById('adjustModal').classList.add('hidden');
+    const adjustedProduct = inventoryProducts.find(p => p.id === product_id);
+    if (adjustedProduct && res.new_stock <= adjustedProduct.min_stock) {
+      showLowStockPopup([{ ...adjustedProduct, stock: res.new_stock }]);
+    }
     loadInventory();
   } catch (e) { toast.error(e.message); }
   finally { btn.disabled = false; btn.textContent = 'Save'; }
