@@ -189,9 +189,15 @@ function renderProductsTable() {
   });
   tbody.querySelectorAll('[data-delete]').forEach(btn => {
     btn.addEventListener('click', async () => {
-      const p = allProducts.find(x => x.id === parseInt(btn.getAttribute('data-delete')));
-      if (!window.confirm(`Delete "${p.name}"? This cannot be undone.`)) return;
-      try { await api.delete('/products/' + p.id); toast.success('Product deleted'); loadProducts(); } catch (e) { toast.error(e.message); }
+      try {
+        const pid = parseInt(btn.getAttribute('data-delete'));
+        const p = allProducts.find(x => x.id === pid);
+        if (!p) { await loadProducts(); return; }
+        if (!window.confirm(`Delete "${p.name}"? This cannot be undone.`)) return;
+        await api.delete('/products/' + p.id);
+        toast.success('Product deleted');
+        await loadProducts();
+      } catch (e) { toast.error(e.message || 'Failed to delete product'); }
     });
   });
 }
