@@ -365,19 +365,19 @@ function renderInventoryTable() {
   tbody.querySelectorAll('[data-inv-adjust]').forEach(btn => {
     btn.addEventListener('click', () => {
       const p = inventoryProducts.find(x => x.id === parseInt(btn.dataset.invAdjust));
-      openAdjustModal(p);
+      if (p) openAdjustModal(p);
     });
   });
   tbody.querySelectorAll('[data-inv-history]').forEach(btn => {
     btn.addEventListener('click', () => {
       const p = inventoryProducts.find(x => x.id === parseInt(btn.dataset.invHistory));
-      openInvHistoryModal(p);
+      if (p) openInvHistoryModal(p);
     });
   });
   tbody.querySelectorAll('[data-inv-link]').forEach(btn => {
     btn.addEventListener('click', () => {
       const p = inventoryProducts.find(x => x.id === parseInt(btn.dataset.invLink));
-      openInvLinkModal(p);
+      if (p) openInvLinkModal(p);
     });
   });
 }
@@ -957,7 +957,7 @@ function renderCategoriesTable() {
       try {
         await api.delete('/categories/' + btn.dataset.deleteCat);
         toast.success(`Category "${name}" deleted`);
-        loadCategories();
+        await loadCategories();
         allProducts = await api.get('/products');
         updateCategoryFilters();
       } catch (e) { toast.error(e.message); }

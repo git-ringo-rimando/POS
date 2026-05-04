@@ -1,12 +1,10 @@
 const app = require('../server');
 const { initDB } = require('../database');
 
-let initialized = false;
+let initPromise = null;
 
 module.exports = async (req, res) => {
-  if (!initialized) {
-    await initDB();
-    initialized = true;
-  }
+  if (!initPromise) initPromise = initDB();
+  await initPromise;
   return app(req, res);
 };
