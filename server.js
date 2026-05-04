@@ -136,19 +136,19 @@ app.delete('/api/products/:id', auth, adminOnly, async (req, res) => {
 });
 
 // ── Inventory ──────────────────────────────────────────────────────────────────
-async function applyCascadedLinks(sql, sourceProductId, delta, sourceName, userId) {
-  if (!delta) return;
+// Syncs all linked target products so their stock = Math.round(sourceNewStock * ratio).
+// Recursive — handles chains A→B→C automatically.
+async function applyCascadedLinks(sql, sourceProductId, sourceNewStock, sourceName, userId) {
   const links = await sql`SELECT * FROM product_links WHERE source_product_id = ${sourceProductId}`;
   for (const link of links) {
-    const cascadedDelta = Math.round(delta * link.ratio);
-    if (cascadedDelta === 0) continue;
+    const newTargetStock = Math.round(sourceNewStock * link.ratio);
     const [target] = await sql`SELECT * FROM products WHERE id = ${link.target_product_id}`;
-    if (!target) continue;
-    const newTargetStock = Math.max(0, target.stock + cascadedDelta);
-    await sql`UPDATE products SET stock=${newTargetStock}, updated_at=CURRENT_TIMESTAMP WHERE id=${link.target_product_id}`;
+    if (!target || newTargetStock === target.stock) continue;
+    await sql`UPDATE products SET stock = ${newTargetStock}, updated_at = CURRENT_TIMESTAMP WHERE id = ${link.target_product_id}`;
     await sql`INSERT INTO inventory_logs (product_id, user_id, type, quantity, previous_stock, new_stock, notes)
-      VALUES (${link.target_product_id}, ${userId}, ${cascadedDelta > 0 ? 'in' : 'out'},
-              ${Math.abs(cascadedDelta)}, ${target.stock}, ${newTargetStock}, ${'Linked: ' + sourceName})`;
+      VALUES (${link.target_product_id}, ${userId}, ${newTargetStock > target.stock ? 'in' : 'out'},
+              ${Math.abs(newTargetStock - target.stock)}, ${target.stock}, ${newTargetStock}, ${'Linked: ' + sourceName})`;
+    await applyCascadedLinks(sql, link.target_product_id, newTargetStock, target.name, userId);
   }
 }
 
@@ -249,8 +249,7 @@ app.post('/api/inventory/adjust', auth, async (req, res) => {
 
   await sql`UPDATE products SET stock=${new_stock}, updated_at=CURRENT_TIMESTAMP WHERE id=${product_id}`;
   await sql`INSERT INTO inventory_logs (product_id, user_id, type, quantity, previous_stock, new_stock, notes) VALUES (${product_id}, ${req.user.id}, ${type}, ${qty}, ${product.stock}, ${new_stock}, ${notes || null})`;
-  const delta = type === 'in' ? qty : type === 'out' ? -qty : null;
-  await applyCascadedLinks(sql, product_id, delta, product.name, req.user.id);
+  await applyCascadedLinks(sql, product_id, new_stock, product.name, req.user.id);
   res.json({ success: true, previous_stock: product.stock, new_stock });
 });
 
@@ -283,7 +282,7 @@ app.delete('/api/orders/:id', auth, adminOnly, async (req, res) => {
         const newStock = product.stock + item.quantity;
         await sql`UPDATE products SET stock=${newStock}, updated_at=CURRENT_TIMESTAMP WHERE id=${item.product_id}`;
         await sql`INSERT INTO inventory_logs (product_id, user_id, type, quantity, previous_stock, new_stock, notes) VALUES (${item.product_id}, ${req.user.id}, 'in', ${item.quantity}, ${product.stock}, ${newStock}, ${'Void: ' + order.order_number})`;
-        await applyCascadedLinks(sql, item.product_id, item.quantity, product.name, req.user.id);
+        await applyCascadedLinks(sql, item.product_id, newStock, product.name, req.user.id);
       }
       await sql`DELETE FROM order_items WHERE order_id=${order.id}`;
       await sql`DELETE FROM orders WHERE id=${order.id}`;
@@ -330,7 +329,7 @@ app.post('/api/orders', auth, async (req, res) => {
         const newStock = p.stock - qty;
         await sql`UPDATE products SET stock=${newStock}, updated_at=CURRENT_TIMESTAMP WHERE id=${p.id}`;
         await sql`INSERT INTO inventory_logs (product_id, user_id, type, quantity, previous_stock, new_stock, notes) VALUES (${p.id}, ${req.user.id}, 'out', ${qty}, ${p.stock}, ${newStock}, ${'Sale: ' + orderNum})`;
-        await applyCascadedLinks(sql, p.id, -qty, p.name, req.user.id);
+        await applyCascadedLinks(sql, p.id, newStock, p.name, req.user.id);
       }
 
       return { order_id: ord.id, order_number: orderNum, subtotal, discount: discountAmt, total, change, payment_method };
