@@ -89,7 +89,22 @@ app.delete('/api/users/:id', auth, adminOnly, async (req, res) => {
 
 // ── Products ───────────────────────────────────────────────────────────────────
 app.get('/api/products', auth, async (req, res) => {
-  res.json(await sql`SELECT * FROM products ORDER BY name ASC`);
+  const products = await sql`SELECT * FROM products ORDER BY name ASC`;
+  const links    = await sql`SELECT * FROM product_links`;
+
+  // Sync any linked product whose stock doesn't match parent_stock × ratio
+  for (const link of links) {
+    const source = products.find(p => p.id === link.source_product_id);
+    const target = products.find(p => p.id === link.target_product_id);
+    if (!source || !target) continue;
+    const expected = Math.round(source.stock * link.ratio);
+    if (expected !== target.stock) {
+      await sql`UPDATE products SET stock = ${expected}, updated_at = CURRENT_TIMESTAMP WHERE id = ${target.id}`;
+      target.stock = expected;
+    }
+  }
+
+  res.json(products);
 });
 
 app.post('/api/products', auth, adminOnly, async (req, res) => {
