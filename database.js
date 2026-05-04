@@ -120,6 +120,19 @@ async function initDB() {
     )
   `;
 
+  await sql`
+    CREATE TABLE IF NOT EXISTS product_links (
+      id SERIAL PRIMARY KEY,
+      source_product_id INTEGER NOT NULL,
+      target_product_id INTEGER NOT NULL,
+      ratio REAL NOT NULL DEFAULT 1,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (source_product_id) REFERENCES products(id) ON DELETE CASCADE,
+      FOREIGN KEY (target_product_id) REFERENCES products(id) ON DELETE CASCADE,
+      UNIQUE (source_product_id, target_product_id)
+    )
+  `;
+
   const [{ c: userCount }] = await sql`SELECT COUNT(*)::int as c FROM users`;
   if (userCount === 0) {
     await sql`

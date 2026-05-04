@@ -494,6 +494,61 @@
   </div>
 </div>
 
+<!-- Inventory History Modal -->
+<div class="modal-overlay hidden" id="invHistoryModal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <h3 class="modal-title" id="invHistoryModalTitle">Inventory History</h3>
+      <button class="btn-close" id="closeInvHistoryModal">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="invHistoryContent"><div style="text-align:center;padding:40px;color:#9ca3af">Loading…</div></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" id="closeInvHistoryModalBtn">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Inventory Links Modal -->
+<div class="modal-overlay hidden" id="invLinkModal">
+  <div class="modal modal-md">
+    <div class="modal-header">
+      <h3 class="modal-title" id="invLinkModalTitle">Inventory Links</h3>
+      <button class="btn-close" id="closeInvLinkModal">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="invLinkProductId" />
+      <p style="font-size:13px;color:#6b7280;margin-bottom:16px" id="invLinkProductDesc"></p>
+      <div style="margin-bottom:20px">
+        <div class="form-label" style="font-size:14px;font-weight:600;margin-bottom:10px">Add New Link</div>
+        <div class="form-row">
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Target Product</label>
+            <select class="form-select" id="invLinkTargetSelect"></select>
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Ratio</label>
+            <input class="form-control" id="invLinkRatio" type="number" min="0.01" step="0.01" placeholder="e.g. 6" />
+            <div class="form-hint">Target changes by: delta × ratio</div>
+          </div>
+        </div>
+        <div style="margin-top:12px">
+          <button class="btn btn-primary" id="saveInvLinkBtn">Add Link</button>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div>
+        <div class="form-label" style="font-size:14px;font-weight:600;margin-bottom:10px">Existing Links</div>
+        <div id="invLinksList"><div style="text-align:center;padding:20px;color:#9ca3af">No links configured</div></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" id="closeInvLinkModalBtn">Close</button>
+    </div>
+  </div>
+</div>
+
 <script src="/js/common.js"></script>
 <script src="/js/admin.js"></script>
 </body>

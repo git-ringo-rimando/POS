@@ -302,6 +302,8 @@ function renderInventoryTable() {
         <td>
           <div class="table-actions">
             <button class="btn btn-sm btn-outline" data-inv-adjust="${p.id}">Adjust</button>
+            <button class="btn btn-sm btn-ghost" data-inv-history="${p.id}">History</button>
+            <button class="btn btn-sm btn-ghost" data-inv-link="${p.id}">Links</button>
           </div>
         </td>
       </tr>`;
@@ -310,6 +312,18 @@ function renderInventoryTable() {
     btn.addEventListener('click', () => {
       const p = inventoryProducts.find(x => x.id === parseInt(btn.dataset.invAdjust));
       openAdjustModal(p);
+    });
+  });
+  tbody.querySelectorAll('[data-inv-history]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const p = inventoryProducts.find(x => x.id === parseInt(btn.dataset.invHistory));
+      openInvHistoryModal(p);
+    });
+  });
+  tbody.querySelectorAll('[data-inv-link]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const p = inventoryProducts.find(x => x.id === parseInt(btn.dataset.invLink));
+      openInvLinkModal(p);
     });
   });
 }
@@ -336,6 +350,133 @@ async function loadInventoryLogs() {
       </tr>`).join('');
   } catch (e) { toast.error('Failed to load logs'); }
 }
+
+// ── Per-product inventory history ─────────────────────────────────────────────
+async function openInvHistoryModal(product) {
+  document.getElementById('invHistoryModalTitle').textContent = `History: ${product.name}`;
+  document.getElementById('invHistoryContent').innerHTML =
+    '<div style="text-align:center;padding:40px;color:#9ca3af">Loading…</div>';
+  document.getElementById('invHistoryModal').classList.remove('hidden');
+  try {
+    const logs = await api.get(`/inventory/logs?product_id=${product.id}`);
+    if (!logs.length) {
+      document.getElementById('invHistoryContent').innerHTML =
+        '<div style="text-align:center;padding:40px;color:#9ca3af">No movement history for this product</div>';
+      return;
+    }
+    const typeLabel = { in: '<span class="badge badge-success">Stock In</span>', out: '<span class="badge badge-danger">Stock Out</span>', set: '<span class="badge badge-info">Set</span>' };
+    const srcLabel = n => !n ? '<span class="text-muted">Manual</span>'
+      : n.startsWith('Sale:')   ? `<span class="badge badge-warning">${n}</span>`
+      : n.startsWith('Void:')   ? `<span class="badge badge-info">${n}</span>`
+      : n.startsWith('Linked:') ? `<span class="badge badge-secondary">${n}</span>`
+      : `<span class="text-muted text-sm">${n}</span>`;
+    document.getElementById('invHistoryContent').innerHTML = `
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>Date/Time</th><th>Type</th><th>Qty</th><th>Before</th><th>After</th><th>By</th><th>Source / Notes</th></tr></thead>
+          <tbody>${logs.map(l => `
+            <tr>
+              <td class="text-sm">${fmtDateTime(l.created_at)}</td>
+              <td>${typeLabel[l.type] || l.type}</td>
+              <td style="font-weight:600">${l.quantity}</td>
+              <td class="text-muted">${l.previous_stock}</td>
+              <td style="font-weight:600;color:${l.new_stock < l.previous_stock ? '#ef4444' : '#10b981'}">${l.new_stock}</td>
+              <td>${l.user_name}</td>
+              <td>${srcLabel(l.notes)}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>`;
+  } catch (e) {
+    document.getElementById('invHistoryContent').innerHTML =
+      `<div style="text-align:center;padding:40px;color:#ef4444">Error loading history</div>`;
+  }
+}
+document.getElementById('closeInvHistoryModal').addEventListener('click',
+  () => document.getElementById('invHistoryModal').classList.add('hidden'));
+document.getElementById('closeInvHistoryModalBtn').addEventListener('click',
+  () => document.getElementById('invHistoryModal').classList.add('hidden'));
+
+// ── Inventory links ────────────────────────────────────────────────────────────
+let invLinkCurrentProduct = null;
+
+async function openInvLinkModal(product) {
+  invLinkCurrentProduct = product;
+  document.getElementById('invLinkModalTitle').textContent = `Links: ${product.name}`;
+  document.getElementById('invLinkProductDesc').textContent =
+    `When "${product.name}" stock changes (in/out), linked targets update automatically.`;
+  document.getElementById('invLinkProductId').value = product.id;
+  document.getElementById('invLinkTargetSelect').innerHTML = inventoryProducts
+    .filter(p => p.id !== product.id)
+    .map(p => `<option value="${p.id}">${p.name} (stock: ${p.stock})</option>`)
+    .join('');
+  document.getElementById('invLinkRatio').value = '';
+  document.getElementById('invLinkModal').classList.remove('hidden');
+  await renderInvLinksList(product.id);
+}
+
+async function renderInvLinksList(productId) {
+  const container = document.getElementById('invLinksList');
+  container.innerHTML = '<div style="text-align:center;padding:16px;color:#9ca3af">Loading…</div>';
+  try {
+    const links = await api.get(`/inventory/links/${productId}`);
+    if (!links.length) {
+      container.innerHTML = '<div style="text-align:center;padding:16px;color:#9ca3af">No links configured</div>';
+      return;
+    }
+    container.innerHTML = links.map(link => {
+      const isSource = link.source_product_id === productId;
+      const roleLabel = isSource
+        ? '<span class="badge badge-info">Source</span>'
+        : '<span class="badge badge-secondary">Target</span>';
+      const removeBtn = isSource
+        ? `<button class="btn btn-sm btn-danger" data-delete-link="${link.id}">Remove</button>`
+        : '<span class="text-sm text-muted">(managed by source)</span>';
+      return `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px;border:1px solid #e5e7eb;border-radius:8px;margin-bottom:8px">
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            ${roleLabel}
+            <span style="font-size:13px"><strong>${link.source_name}</strong> → <strong>${link.target_name}</strong></span>
+            <span class="badge badge-warning">×${link.ratio}</span>
+          </div>
+          ${removeBtn}
+        </div>`;
+    }).join('');
+    container.querySelectorAll('[data-delete-link]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        confirm('Remove this inventory link?', async () => {
+          try {
+            await api.delete('/inventory/links/' + btn.dataset.deleteLink);
+            toast.success('Link removed');
+            await renderInvLinksList(productId);
+          } catch (e) { toast.error(e.message); }
+        });
+      });
+    });
+  } catch { container.innerHTML = '<div style="text-align:center;padding:16px;color:#ef4444">Failed to load links</div>'; }
+}
+
+document.getElementById('saveInvLinkBtn').addEventListener('click', async () => {
+  const productId = parseInt(document.getElementById('invLinkProductId').value);
+  const targetId  = parseInt(document.getElementById('invLinkTargetSelect').value);
+  const ratio     = parseFloat(document.getElementById('invLinkRatio').value);
+  if (!targetId || isNaN(ratio) || ratio <= 0) {
+    toast.error('Select a target product and enter a positive ratio'); return;
+  }
+  const btn = document.getElementById('saveInvLinkBtn');
+  btn.disabled = true; btn.textContent = 'Saving…';
+  try {
+    await api.post('/inventory/links', { source_product_id: productId, target_product_id: targetId, ratio });
+    toast.success('Link added');
+    document.getElementById('invLinkRatio').value = '';
+    await renderInvLinksList(productId);
+  } catch (e) { toast.error(e.message); }
+  finally { btn.disabled = false; btn.textContent = 'Add Link'; }
+});
+document.getElementById('closeInvLinkModal').addEventListener('click',
+  () => document.getElementById('invLinkModal').classList.add('hidden'));
+document.getElementById('closeInvLinkModalBtn').addEventListener('click',
+  () => document.getElementById('invLinkModal').classList.add('hidden'));
 
 function populateAdjustSelect() {
   const sel = document.getElementById('adjustProductSelect');

@@ -126,15 +126,93 @@ app.delete('/api/products/:id', auth, adminOnly, async (req, res) => {
 });
 
 // ── Inventory ──────────────────────────────────────────────────────────────────
+async function applyCascadedLinks(sql, sourceProductId, delta, sourceName, userId) {
+  if (!delta) return;
+  const links = await sql`SELECT * FROM product_links WHERE source_product_id = ${sourceProductId}`;
+  for (const link of links) {
+    const cascadedDelta = Math.round(delta * link.ratio);
+    if (cascadedDelta === 0) continue;
+    const [target] = await sql`SELECT * FROM products WHERE id = ${link.target_product_id}`;
+    if (!target) continue;
+    const newTargetStock = Math.max(0, target.stock + cascadedDelta);
+    await sql`UPDATE products SET stock=${newTargetStock}, updated_at=CURRENT_TIMESTAMP WHERE id=${link.target_product_id}`;
+    await sql`INSERT INTO inventory_logs (product_id, user_id, type, quantity, previous_stock, new_stock, notes)
+      VALUES (${link.target_product_id}, ${userId}, ${cascadedDelta > 0 ? 'in' : 'out'},
+              ${Math.abs(cascadedDelta)}, ${target.stock}, ${newTargetStock}, ${'Linked: ' + sourceName})`;
+  }
+}
+
 app.get('/api/inventory/logs', auth, async (req, res) => {
-  const logs = await sql`
+  const { product_id } = req.query;
+  if (product_id) {
+    const pid = parseInt(product_id);
+    if (isNaN(pid)) return res.status(400).json({ error: 'Invalid product_id' });
+    return res.json(await sql`
+      SELECT il.*, p.name as product_name, u.full_name as user_name
+      FROM inventory_logs il
+      JOIN products p ON il.product_id = p.id
+      JOIN users u ON il.user_id = u.id
+      WHERE il.product_id = ${pid}
+      ORDER BY il.created_at DESC
+    `);
+  }
+  res.json(await sql`
     SELECT il.*, p.name as product_name, u.full_name as user_name
     FROM inventory_logs il
     JOIN products p ON il.product_id = p.id
     JOIN users u ON il.user_id = u.id
     ORDER BY il.created_at DESC LIMIT 300
-  `;
-  res.json(logs);
+  `);
+});
+
+app.get('/api/inventory/links/:product_id', auth, adminOnly, async (req, res) => {
+  const pid = parseInt(req.params.product_id);
+  if (isNaN(pid)) return res.status(400).json({ error: 'Invalid product_id' });
+  res.json(await sql`
+    SELECT pl.*, sp.name as source_name, tp.name as target_name
+    FROM product_links pl
+    JOIN products sp ON pl.source_product_id = sp.id
+    JOIN products tp ON pl.target_product_id = tp.id
+    WHERE pl.source_product_id = ${pid} OR pl.target_product_id = ${pid}
+    ORDER BY pl.created_at ASC
+  `);
+});
+
+app.post('/api/inventory/links', auth, adminOnly, async (req, res) => {
+  const src = parseInt(req.body.source_product_id);
+  const tgt = parseInt(req.body.target_product_id);
+  const r   = parseFloat(req.body.ratio);
+  if (isNaN(src) || isNaN(tgt) || isNaN(r) || r <= 0)
+    return res.status(400).json({ error: 'source_product_id, target_product_id, and a positive ratio are required' });
+  if (src === tgt)
+    return res.status(400).json({ error: 'A product cannot be linked to itself' });
+  const visited = new Set();
+  const queue = [tgt];
+  while (queue.length) {
+    const cur = queue.shift();
+    if (cur === src) return res.status(400).json({ error: 'This link would create a circular dependency' });
+    if (!visited.has(cur)) {
+      visited.add(cur);
+      const downstream = await sql`SELECT target_product_id FROM product_links WHERE source_product_id = ${cur}`;
+      for (const row of downstream) queue.push(row.target_product_id);
+    }
+  }
+  try {
+    const [link] = await sql`INSERT INTO product_links (source_product_id, target_product_id, ratio)
+      VALUES (${src}, ${tgt}, ${r}) RETURNING *`;
+    res.json(link);
+  } catch (e) {
+    if (e.code === '23505') return res.status(409).json({ error: 'This link already exists' });
+    throw e;
+  }
+});
+
+app.delete('/api/inventory/links/:id', auth, adminOnly, async (req, res) => {
+  const id = parseInt(req.params.id);
+  const [link] = await sql`SELECT * FROM product_links WHERE id = ${id}`;
+  if (!link) return res.status(404).json({ error: 'Link not found' });
+  await sql`DELETE FROM product_links WHERE id = ${id}`;
+  res.json({ success: true });
 });
 
 app.post('/api/inventory/adjust', auth, async (req, res) => {
@@ -161,6 +239,8 @@ app.post('/api/inventory/adjust', auth, async (req, res) => {
 
   await sql`UPDATE products SET stock=${new_stock}, updated_at=CURRENT_TIMESTAMP WHERE id=${product_id}`;
   await sql`INSERT INTO inventory_logs (product_id, user_id, type, quantity, previous_stock, new_stock, notes) VALUES (${product_id}, ${req.user.id}, ${type}, ${qty}, ${product.stock}, ${new_stock}, ${notes || null})`;
+  const delta = type === 'in' ? qty : type === 'out' ? -qty : null;
+  await applyCascadedLinks(sql, product_id, delta, product.name, req.user.id);
   res.json({ success: true, previous_stock: product.stock, new_stock });
 });
 
@@ -193,6 +273,7 @@ app.delete('/api/orders/:id', auth, adminOnly, async (req, res) => {
         const newStock = product.stock + item.quantity;
         await sql`UPDATE products SET stock=${newStock}, updated_at=CURRENT_TIMESTAMP WHERE id=${item.product_id}`;
         await sql`INSERT INTO inventory_logs (product_id, user_id, type, quantity, previous_stock, new_stock, notes) VALUES (${item.product_id}, ${req.user.id}, 'in', ${item.quantity}, ${product.stock}, ${newStock}, ${'Void: ' + order.order_number})`;
+        await applyCascadedLinks(sql, item.product_id, item.quantity, product.name, req.user.id);
       }
       await sql`DELETE FROM order_items WHERE order_id=${order.id}`;
       await sql`DELETE FROM orders WHERE id=${order.id}`;
@@ -239,6 +320,7 @@ app.post('/api/orders', auth, async (req, res) => {
         const newStock = p.stock - qty;
         await sql`UPDATE products SET stock=${newStock}, updated_at=CURRENT_TIMESTAMP WHERE id=${p.id}`;
         await sql`INSERT INTO inventory_logs (product_id, user_id, type, quantity, previous_stock, new_stock, notes) VALUES (${p.id}, ${req.user.id}, 'out', ${qty}, ${p.stock}, ${newStock}, ${'Sale: ' + orderNum})`;
+        await applyCascadedLinks(sql, p.id, -qty, p.name, req.user.id);
       }
 
       return { order_id: ord.id, order_number: orderNum, subtotal, discount: discountAmt, total, change, payment_method };
