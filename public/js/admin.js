@@ -477,14 +477,13 @@ async function renderInvLinksList(productId) {
         </div>`;
     }).join('');
     container.querySelectorAll('[data-delete-link]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        confirm('Remove this inventory link?', async () => {
-          try {
-            await api.delete('/inventory/links/' + btn.dataset.deleteLink);
-            toast.success('Link removed');
-            await renderInvLinksList(productId);
-          } catch (e) { toast.error(e.message); }
-        });
+      btn.addEventListener('click', async () => {
+        if (!window.confirm('Remove this inventory link?')) return;
+        try {
+          await api.delete('/inventory/links/' + btn.getAttribute('data-delete-link'));
+          toast.success('Link removed');
+          await renderInvLinksList(productId);
+        } catch (e) { toast.error(e.message); }
       });
     });
   } catch { container.innerHTML = '<div style="text-align:center;padding:16px;color:#ef4444">Failed to load links</div>'; }
