@@ -7,3 +7,48 @@ manager1 / Password: manager123     123456
        Admin login:   admin / admin123                                                                                                                               
        Cashier login: cashier1 / cashier123                                                                                                                          
                                                  
+------
+     Verification After Deploy
+
+     1. Open the public URL → login page loads
+     2. Log in as admin / admin123
+     3. Create a test order
+     4. Wait for the app to sleep (5 min on Glitch), then reload
+     5. Confirm the test order still exists → persistence confirmed
+------
+
+                                                                                                                                                                    
+  1. Go to glitch.com → sign in → New Project → Import from GitHub                                                                                                   
+  2. Paste: https://github.com/git-ringo-rimando/POS                                                                                                                   3. Once imported, open the .env file in the Glitch editor and add:                                                                                                 
+  JWT_SECRET=any_long_random_string_here                                                                                                                               DB_PATH=.data/pos.db                                                                                                                                               
+  4. Glitch auto-runs npm start — your app will be live at a https://your-project-name.glitch.me URL
+                                                                                                                                                                     
+  The .data/ folder on Glitch is persistent, so your SQLite database will survive restarts and sleeps. The only caveat is a ~15-second cold start after 5 minutes of 
+  inactivity — acceptable for a pilot.                                                                                                                               
+                                                
+
+ 1. Initialize the repo                                                                                                                                           
+  2. Create a .gitignore (to exclude pos.db, node_modules)
+  4. Walk you through creating a GitHub repo and pushing to it
+
+
+ GitHub CLI isn't installed. Here's the step-by-step process using the GitHub website + git commands:                                                               
+                                                                                                                                                                     
+  ---                                                                                                                                                                
+  Step 1 — Create the repo on GitHub                                                                                                                                   1. Go to https://github.com and sign in                                                                                                                            
+  2. Click the + icon (top right) → New repository                                                                                                                     3. Name it (e.g. POS), set visibility (public/private)                                                                                                             
+  4. Do NOT check "Add a README", ".gitignore", or "license" — the repo must be empty
+  5. Click Create repository
+
+  ---
+  Step 2 — Copy the remote URL
+
+  After creating, GitHub shows a page with setup instructions. Copy the HTTPS URL — it looks like:
+  https://github.com/YOUR_USERNAME/POS.git
+
+  ---
+  Step 3 — Tell me the URL
+
+  Once you have the URL, paste it here and I'll run the remaining git commands (add remote, stage files, commit, push) for you.
+
+C4DB-B6EE
