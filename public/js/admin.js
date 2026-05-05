@@ -1047,10 +1047,31 @@ async function loadProductHistory() {
 // ══════════════════════════════════════════════════════════════════════════════
 let dailySummaryChartInst;
 
+function getDSSDateRange() {
+  const preset = document.getElementById('dsPreset').value;
+  const today = new Date();
+  const toISO = d => d.toISOString().slice(0, 10);
+  const start = new Date(today);
+  if (preset === 'today')     return { from: toISO(today), to: toISO(today) };
+  if (preset === 'yesterday') { start.setDate(today.getDate() - 1); return { from: toISO(start), to: toISO(start) }; }
+  if (preset === 'week')      { start.setDate(today.getDate() - today.getDay()); return { from: toISO(start), to: toISO(today) }; }
+  if (preset === 'month')     { start.setDate(1); return { from: toISO(start), to: toISO(today) }; }
+  return { from: document.getElementById('dsFrom').value, to: document.getElementById('dsTo').value };
+}
+
+function fmtDSDate(iso) {
+  return new Date(iso + 'T00:00:00').toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
 async function loadDailySummary() {
+  const { from, to } = getDSSDateRange();
+  if (!from || !to) { toast.error('Please select a valid date range'); return; }
   try {
-    const data = await api.get('/reports/daily-summary');
-    const dateStr = new Date(data.date + 'T00:00:00').toLocaleDateString('en-PH', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    const params = new URLSearchParams({ from, to });
+    const data = await api.get('/reports/daily-summary?' + params);
+    const dateStr = from === to
+      ? new Date(from + 'T00:00:00').toLocaleDateString('en-PH', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+      : `${fmtDSDate(from)} – ${fmtDSDate(to)}`;
     document.getElementById('dsSummaryDate').textContent = dateStr;
 
     document.getElementById('dsOrders').textContent = data.orders;
@@ -1135,7 +1156,20 @@ async function loadDailySummary() {
   } catch (e) { toast.error('Failed to load daily summary: ' + e.message); }
 }
 
+// Date filter wiring
+document.getElementById('dsPreset').addEventListener('change', () => {
+  const isCustom = document.getElementById('dsPreset').value === 'custom';
+  document.getElementById('dsFrom').classList.toggle('hidden', !isCustom);
+  document.getElementById('dsDateSep').classList.toggle('hidden', !isCustom);
+  document.getElementById('dsTo').classList.toggle('hidden', !isCustom);
+});
+document.getElementById('dsApply').addEventListener('click', loadDailySummary);
 document.getElementById('dsRefresh').addEventListener('click', loadDailySummary);
+
+// Set default today value in custom date inputs
+const _dsToday = new Date().toISOString().slice(0, 10);
+document.getElementById('dsFrom').value = _dsToday;
+document.getElementById('dsTo').value   = _dsToday;
 
 // ── Bootstrap ──────────────────────────────────────────────────────────────────
 if (isCashier) {
