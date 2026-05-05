@@ -10,8 +10,8 @@
   <div class="login-page">
     <div class="login-card">
       <div class="login-logo">
-        <div class="logo-icon">🛒</div>
-        <h1>POS System</h1>
+        <div class="logo-icon" id="loginLogo">🛒</div>
+        <h1 id="loginBrandName">POS System</h1>
         <p>Point of Sale Management</p>
       </div>
       <div id="loginError" class="login-error hidden"></div>
@@ -30,6 +30,13 @@
   </div>
   <script src="/js/common.js"></script>
   <script>
+    loadAppSettings().then(s => {
+      const name = s.business_name || 'POS System';
+      document.title = name + ' — Login';
+      document.getElementById('loginBrandName').textContent = name;
+      applyLogoToEl(document.getElementById('loginLogo'), s, 'max-height:80px;width:auto');
+    });
+
     // Redirect if already logged in
     if (getToken() && getUser()) {
       const user = getUser();

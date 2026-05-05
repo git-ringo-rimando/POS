@@ -2,6 +2,15 @@
 const user = getUser();
 if (!requireAuth()) throw new Error('stop');
 
+let appSettings = { business_name: 'Aling Inday Kamuning Branch POS', logo: null };
+loadAppSettings().then(s => {
+  appSettings = s;
+  const name = s.business_name || 'POS Terminal';
+  document.title = name;
+  document.getElementById('posHeaderName').textContent = name;
+  applyLogoToEl(document.getElementById('posHeaderLogo'), s, 'height:28px;width:auto');
+});
+
 document.getElementById('cashierName').textContent = user.full_name || user.username;
 const adminLink = document.getElementById('adminLink');
 adminLink.classList.remove('hidden');
@@ -268,7 +277,7 @@ function showReceipt(order, amountPaid) {
   document.getElementById('receiptBody').innerHTML = `
     <div class="receipt">
       <div class="receipt-header">
-        <h3>🛒 POS System</h3>
+        <h3>${appSettings.logo ? `<img src="${appSettings.logo}" alt="${appSettings.business_name}" style="max-height:48px;display:block;margin:0 auto 4px" />` : '🛒'} ${appSettings.business_name || 'POS System'}</h3>
         <div style="font-size:12px;color:#6b7280">${now}</div>
         <div style="font-size:12px;color:#6b7280">Order: ${order.order_number}</div>
         <div style="font-size:12px;color:#6b7280">Cashier: ${user.full_name}</div>

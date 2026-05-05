@@ -133,6 +133,21 @@ async function initDB() {
     )
   `;
 
+  await sql`
+    CREATE TABLE IF NOT EXISTS settings (
+      key TEXT PRIMARY KEY,
+      value TEXT,
+      updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+    )
+  `;
+
+  await sql`
+    INSERT INTO settings (key, value) VALUES
+      ('business_name', 'Aling Inday Kamuning Branch POS'),
+      ('logo', NULL)
+    ON CONFLICT DO NOTHING
+  `;
+
   const [{ c: userCount }] = await sql`SELECT COUNT(*)::int as c FROM users`;
   if (userCount === 0) {
     await sql`

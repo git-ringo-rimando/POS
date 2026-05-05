@@ -117,6 +117,21 @@ function stockBadge(stock, minStock) {
   return `<span class="badge badge-success">${stock}</span>`;
 }
 
+// ── App settings / branding ────────────────────────────────────────────────────
+async function loadAppSettings() {
+  try { return await api.get('/settings'); }
+  catch { return { business_name: 'Aling Inday Kamuning Branch POS', logo: null }; }
+}
+
+function applyLogoToEl(el, settings, style = '') {
+  if (!el) return;
+  if (settings.logo) {
+    el.innerHTML = `<img src="${settings.logo}" alt="${settings.business_name || ''}" style="max-height:100%;max-width:100%;object-fit:contain;${style}" />`;
+  } else {
+    el.textContent = '🛒';
+  }
+}
+
 // ── CSV export ─────────────────────────────────────────────────────────────────
 function downloadCSV(filename, rows) {
   const csv = rows.map(r => r.map(c => `"${String(c ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');

@@ -32,7 +32,7 @@ document.querySelectorAll('.nav-item[data-section]').forEach(item => {
     item.classList.add('active');
     const section = document.getElementById('section-' + item.dataset.section);
     if (section) section.classList.add('active');
-    const loaders = { dashboard: loadDashboard, products: loadProducts, inventory: loadInventory, orders: loadOrders, users: loadUsers, categories: loadCategories, 'daily-summary': loadDailySummary };
+    const loaders = { dashboard: loadDashboard, products: loadProducts, inventory: loadInventory, orders: loadOrders, users: loadUsers, categories: loadCategories, 'daily-summary': loadDailySummary, settings: loadSettingsSection };
     loaders[item.dataset.section]?.();
   });
 });
@@ -1171,7 +1171,66 @@ const _dsToday = new Date().toISOString().slice(0, 10);
 document.getElementById('dsFrom').value = _dsToday;
 document.getElementById('dsTo').value   = _dsToday;
 
+// ══════════════════════════════════════════════════════════════════════════════
+// SETTINGS
+// ══════════════════════════════════════════════════════════════════════════════
+let _pendingLogoB64 = undefined; // undefined = no change, null = remove, string = new logo
+
+function applyAdminBranding(settings) {
+  const name = settings.business_name || 'POS System';
+  document.title = name + ' — Admin Portal';
+  document.getElementById('sidebarBrandName').textContent = name;
+  applyLogoToEl(document.getElementById('sidebarLogoBox'), settings, 'border-radius:4px');
+}
+
+async function loadSettingsSection() {
+  const settings = await loadAppSettings();
+  _pendingLogoB64 = undefined;
+  document.getElementById('settingsName').value = settings.business_name || '';
+  applyLogoToEl(document.getElementById('settingsLogoBox'), settings, 'border-radius:6px');
+  document.getElementById('settingsLogoFile').value = '';
+}
+
+document.getElementById('settingsLogoFile').addEventListener('change', () => {
+  const file = document.getElementById('settingsLogoFile').files[0];
+  if (!file) return;
+  if (file.size > 512 * 1024) { toast.error('Image must be under 500 KB'); document.getElementById('settingsLogoFile').value = ''; return; }
+  const reader = new FileReader();
+  reader.onload = e => {
+    _pendingLogoB64 = e.target.result;
+    const box = document.getElementById('settingsLogoBox');
+    box.innerHTML = `<img src="${_pendingLogoB64}" style="width:100%;height:100%;object-fit:contain;border-radius:6px" />`;
+  };
+  reader.readAsDataURL(file);
+});
+
+document.getElementById('removeLogoBtn').addEventListener('click', () => {
+  _pendingLogoB64 = null;
+  document.getElementById('settingsLogoBox').textContent = '🛒';
+  document.getElementById('settingsLogoFile').value = '';
+  toast.info('Logo will be removed when you Save Changes');
+});
+
+document.getElementById('saveSettingsBtn').addEventListener('click', async () => {
+  const name = document.getElementById('settingsName').value.trim();
+  if (!name) { toast.error('Business name cannot be empty'); return; }
+  const body = { business_name: name };
+  if (_pendingLogoB64 !== undefined) body.logo = _pendingLogoB64; // null or base64
+  const btn = document.getElementById('saveSettingsBtn');
+  btn.disabled = true; btn.textContent = 'Saving…';
+  try {
+    await api.put('/settings', body);
+    _pendingLogoB64 = undefined;
+    const updated = await loadAppSettings();
+    applyAdminBranding(updated);
+    toast.success('Settings saved');
+  } catch (e) { toast.error(e.message); }
+  finally { btn.disabled = false; btn.textContent = 'Save Changes'; }
+});
+
 // ── Bootstrap ──────────────────────────────────────────────────────────────────
+loadAppSettings().then(applyAdminBranding);
+
 if (isCashier) {
   document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
   document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('active'));

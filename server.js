@@ -390,6 +390,26 @@ app.get('/api/product-history', auth, adminOnly, ah(async (req, res) => {
   res.json(await sql`SELECT * FROM product_history ORDER BY changed_at DESC LIMIT 500`);
 }));
 
+// ── Settings ───────────────────────────────────────────────────────────────────
+app.get('/api/settings', ah(async (req, res) => {
+  const rows = await sql`SELECT key, value FROM settings WHERE key IN ('business_name', 'logo')`;
+  const out = { business_name: 'Aling Inday Kamuning Branch POS', logo: null };
+  rows.forEach(r => { out[r.key] = r.value; });
+  res.json(out);
+}));
+
+app.put('/api/settings', auth, adminOnly, ah(async (req, res) => {
+  const { business_name, logo } = req.body;
+  if (business_name !== undefined) {
+    const name = String(business_name).trim() || 'Aling Inday Kamuning Branch POS';
+    await sql`INSERT INTO settings (key, value) VALUES ('business_name', ${name}) ON CONFLICT (key) DO UPDATE SET value = ${name}, updated_at = CURRENT_TIMESTAMP`;
+  }
+  if (logo !== undefined) {
+    await sql`INSERT INTO settings (key, value) VALUES ('logo', ${logo}) ON CONFLICT (key) DO UPDATE SET value = ${logo}, updated_at = CURRENT_TIMESTAMP`;
+  }
+  res.json({ success: true });
+}));
+
 // ── Reports ────────────────────────────────────────────────────────────────────
 app.get('/api/reports/summary', auth, adminOrManager, ah(async (req, res) => {
   const df = req.query.from || '2000-01-01';
