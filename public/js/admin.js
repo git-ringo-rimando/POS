@@ -452,10 +452,7 @@ document.getElementById('closeInvHistoryModalBtn').addEventListener('click',
   () => document.getElementById('invHistoryModal').classList.add('hidden'));
 
 // ── Inventory links ────────────────────────────────────────────────────────────
-let invLinkCurrentProduct = null;
-
 async function openInvLinkModal(product) {
-  invLinkCurrentProduct = product;
   document.getElementById('invLinkModalTitle').textContent = `Links: ${product.name}`;
   document.getElementById('invLinkProductDesc').textContent =
     `When "${product.name}" stock changes (in/out), linked targets update automatically.`;
@@ -715,12 +712,12 @@ let lastReportData = null;
 
 function getDateRange(preset) {
   const today = new Date();
-  const fmt = d => d.toISOString().slice(0, 10);
+  const toISO = d => d.toISOString().slice(0, 10);
   const start = new Date(today);
-  if (preset === 'today') return { from: fmt(today), to: fmt(today) };
-  if (preset === 'week') { start.setDate(today.getDate() - today.getDay()); return { from: fmt(start), to: fmt(today) }; }
-  if (preset === 'month') { start.setDate(1); return { from: fmt(start), to: fmt(today) }; }
-  if (preset === 'year') { start.setMonth(0, 1); return { from: fmt(start), to: fmt(today) }; }
+  if (preset === 'today') return { from: toISO(today), to: toISO(today) };
+  if (preset === 'week') { start.setDate(today.getDate() - today.getDay()); return { from: toISO(start), to: toISO(today) }; }
+  if (preset === 'month') { start.setDate(1); return { from: toISO(start), to: toISO(today) }; }
+  if (preset === 'year') { start.setMonth(0, 1); return { from: toISO(start), to: toISO(today) }; }
   return { from: document.getElementById('reportFrom').value, to: document.getElementById('reportTo').value };
 }
 

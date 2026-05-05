@@ -292,18 +292,14 @@ function showReceipt(order, amountPaid) {
   document.getElementById('receiptModal').classList.remove('hidden');
 }
 
-document.getElementById('closeReceipt').addEventListener('click', () => {
+function resetAfterSale() {
   document.getElementById('receiptModal').classList.add('hidden');
   cart = [];
   document.getElementById('discountInput').value = '';
   renderCart();
-});
-document.getElementById('newOrderBtn').addEventListener('click', () => {
-  document.getElementById('receiptModal').classList.add('hidden');
-  cart = [];
-  document.getElementById('discountInput').value = '';
-  renderCart();
-});
+}
+document.getElementById('closeReceipt').addEventListener('click', resetAfterSale);
+document.getElementById('newOrderBtn').addEventListener('click', resetAfterSale);
 document.getElementById('printReceiptBtn').addEventListener('click', () => {
   const content = document.getElementById('receiptBody').innerHTML;
   const win = window.open('', '_blank', 'width=400,height=600');
