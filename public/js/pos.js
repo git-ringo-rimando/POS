@@ -3,7 +3,9 @@ const user = getUser();
 if (!requireAuth()) throw new Error('stop');
 
 document.getElementById('cashierName').textContent = user.full_name || user.username;
-if (['admin', 'account_manager'].includes(user.role)) document.getElementById('adminLink').classList.remove('hidden');
+const adminLink = document.getElementById('adminLink');
+adminLink.classList.remove('hidden');
+if (!['admin', 'account_manager'].includes(user.role)) adminLink.textContent = '📅 Daily Summary';
 document.getElementById('logoutBtn').addEventListener('click', () => { clearSession(); window.location.href = '/'; });
 
 // Live clock

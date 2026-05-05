@@ -19,15 +19,16 @@
       </div>
     </div>
     <nav class="sidebar-nav">
-      <div class="nav-section-label">Overview</div>
-      <div class="nav-item active" data-section="dashboard"><span class="nav-icon">📊</span> Dashboard</div>
+      <div class="nav-section-label" data-manager-only>Overview</div>
+      <div class="nav-item active" data-section="dashboard" data-manager-only><span class="nav-icon">📊</span> Dashboard</div>
       <div class="nav-section-label" style="margin-top:8px" data-admin-only>Inventory</div>
       <div class="nav-item" data-section="products" data-admin-only><span class="nav-icon">📦</span> Products</div>
       <div class="nav-item" data-section="inventory" data-admin-only><span class="nav-icon">🏭</span> Inventory</div>
       <div class="nav-item" data-section="categories" data-admin-only><span class="nav-icon">🏷️</span> Categories</div>
       <div class="nav-section-label" style="margin-top:8px">Sales</div>
+      <div class="nav-item" data-section="daily-summary"><span class="nav-icon">📅</span> Daily Sales</div>
       <div class="nav-item" data-section="orders"><span class="nav-icon">🛍️</span> Orders</div>
-      <div class="nav-item" data-section="reports"><span class="nav-icon">📈</span> Reports</div>
+      <div class="nav-item" data-section="reports" data-manager-only><span class="nav-icon">📈</span> Reports</div>
       <div class="nav-section-label" style="margin-top:8px" data-admin-only>System</div>
       <div class="nav-item" data-section="users" data-admin-only><span class="nav-icon">👥</span> Users</div>
       <div class="nav-item" id="posLink" style="margin-top:4px"><span class="nav-icon">🖥️</span> POS Terminal</div>
@@ -205,6 +206,57 @@
                 <tbody id="categoryArchiveBody"></tbody>
               </table>
             </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ DAILY SALES SUMMARY ══════════════════════════════════════════════ -->
+    <section class="admin-section" id="section-daily-summary">
+      <div class="section-header">
+        <div>
+          <div class="section-title">Daily Sales Summary</div>
+          <div class="section-subtitle" id="dsSummaryDate">Today</div>
+        </div>
+        <div class="section-actions">
+          <button class="btn btn-secondary" id="dsRefresh">↺ Refresh</button>
+        </div>
+      </div>
+      <div class="section-content">
+        <div class="kpi-grid">
+          <div class="kpi-card"><div class="kpi-icon blue">🛍️</div><div><div class="kpi-label">Total Orders</div><div class="kpi-value" id="dsOrders">—</div></div></div>
+          <div class="kpi-card"><div class="kpi-icon green">💰</div><div><div class="kpi-label">Total Revenue</div><div class="kpi-value" id="dsRevenue">—</div></div></div>
+          <div class="kpi-card"><div class="kpi-icon purple">📈</div><div><div class="kpi-label">Gross Profit</div><div class="kpi-value" id="dsProfit">—</div><div class="kpi-sub" id="dsMargin">—</div></div></div>
+          <div class="kpi-card"><div class="kpi-icon orange">🏷️</div><div><div class="kpi-label">Discounts Applied</div><div class="kpi-value" id="dsDiscounts">—</div></div></div>
+        </div>
+        <div class="charts-grid" style="grid-template-columns:1fr 1fr">
+          <div class="card">
+            <div class="card-header"><div class="card-title">💳 Payment Breakdown</div></div>
+            <div style="padding:0 16px 16px" id="dsPaymentBody">
+              <div style="text-align:center;padding:24px;color:#9ca3af">Loading…</div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div class="card-title">👤 Cashier Performance</div></div>
+            <div class="table-wrap">
+              <table class="table">
+                <thead><tr><th>Cashier</th><th style="text-align:center">Orders</th><th style="text-align:right">Revenue</th></tr></thead>
+                <tbody id="dsCashierBody"><tr><td colspan="3" style="text-align:center;color:#9ca3af;padding:24px">Loading…</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">Orders by Hour</div></div>
+          <div class="chart-container" style="padding:8px 16px 16px"><canvas id="dsHourlyChart" height="160"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">Top Items Today</div></div>
+          <div class="table-wrap">
+            <table class="table">
+              <thead><tr><th>#</th><th>Product</th><th style="text-align:center">Qty Sold</th><th style="text-align:right">Revenue</th></tr></thead>
+              <tbody id="dsTopItemsBody"><tr><td colspan="4" style="text-align:center;color:#9ca3af;padding:24px">Loading…</td></tr></tbody>
+            </table>
           </div>
         </div>
       </div>

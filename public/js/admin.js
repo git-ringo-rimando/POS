@@ -1,21 +1,25 @@
 // ── Auth guard ─────────────────────────────────────────────────────────────────
 const user = getUser();
 if (!user || !getToken()) { window.location.href = '/'; throw new Error('stop'); }
-if (!['admin', 'account_manager'].includes(user.role)) { window.location.href = '/pos.html'; throw new Error('stop'); }
 
-const isAdmin = user.role === 'admin';
+const isAdmin   = user.role === 'admin';
+const isCashier = user.role === 'cashier';
 
 document.getElementById('sidebarName').textContent = user.full_name || user.username;
 document.getElementById('sidebarAvatar').textContent = (user.full_name || user.username)[0].toUpperCase();
-document.getElementById('sidebarRoleLabel').textContent = isAdmin ? 'Administrator' : 'Account Manager';
+document.getElementById('sidebarRoleLabel').textContent = isAdmin ? 'Administrator' : isCashier ? 'Cashier' : 'Account Manager';
 const h = new Date().getHours();
 document.getElementById('dashGreeting').textContent = h < 12 ? 'Good morning!' : h < 18 ? 'Good afternoon!' : 'Good evening!';
 document.getElementById('logoutBtn').addEventListener('click', () => { clearSession(); window.location.href = '/'; });
 document.getElementById('posLink').addEventListener('click', () => window.location.href = '/pos.html');
 
-// Hide admin-only nav items for account managers
+// Hide admin-only nav items for non-admins
 if (!isAdmin) {
   document.querySelectorAll('[data-admin-only]').forEach(el => el.style.display = 'none');
+}
+// Hide admin+manager-only items for cashiers
+if (isCashier) {
+  document.querySelectorAll('[data-manager-only]').forEach(el => el.style.display = 'none');
 }
 
 // ── Navigation ─────────────────────────────────────────────────────────────────
@@ -28,7 +32,7 @@ document.querySelectorAll('.nav-item[data-section]').forEach(item => {
     item.classList.add('active');
     const section = document.getElementById('section-' + item.dataset.section);
     if (section) section.classList.add('active');
-    const loaders = { dashboard: loadDashboard, products: loadProducts, inventory: loadInventory, orders: loadOrders, users: loadUsers, categories: loadCategories };
+    const loaders = { dashboard: loadDashboard, products: loadProducts, inventory: loadInventory, orders: loadOrders, users: loadUsers, categories: loadCategories, 'daily-summary': loadDailySummary };
     loaders[item.dataset.section]?.();
   });
 });
@@ -1038,5 +1042,108 @@ async function loadProductHistory() {
   } catch (e) { toast.error('Failed to load product history'); }
 }
 
+// ══════════════════════════════════════════════════════════════════════════════
+// DAILY SALES SUMMARY
+// ══════════════════════════════════════════════════════════════════════════════
+let dailySummaryChartInst;
+
+async function loadDailySummary() {
+  try {
+    const data = await api.get('/reports/daily-summary');
+    const dateStr = new Date(data.date + 'T00:00:00').toLocaleDateString('en-PH', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    document.getElementById('dsSummaryDate').textContent = dateStr;
+
+    document.getElementById('dsOrders').textContent = data.orders;
+    document.getElementById('dsRevenue').textContent = fmt(data.revenue);
+    document.getElementById('dsProfit').textContent = fmt(data.gross_profit);
+    document.getElementById('dsMargin').textContent = `${data.profit_margin}% margin`;
+    document.getElementById('dsDiscounts').textContent = fmt(data.discounts);
+
+    // Payment breakdown
+    const pmIcons = { cash: '💵', card: '💳', gcash: '📱' };
+    const pmBody = document.getElementById('dsPaymentBody');
+    if (!data.payment_breakdown.length) {
+      pmBody.innerHTML = '<div style="text-align:center;padding:24px;color:#9ca3af;font-size:13px">No transactions today</div>';
+    } else {
+      pmBody.innerHTML = data.payment_breakdown.map(pm => `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f3f4f6">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:20px">${pmIcons[pm.payment_method] || '💰'}</span>
+            <span style="font-weight:600;text-transform:capitalize">${pm.payment_method}</span>
+          </div>
+          <div style="text-align:right">
+            <div style="font-weight:700;color:#111827">${fmt(pm.total)}</div>
+            <div style="font-size:12px;color:#6b7280">${pm.count} transaction${pm.count !== 1 ? 's' : ''}</div>
+          </div>
+        </div>`).join('');
+    }
+
+    // Cashier breakdown
+    const cashierBody = document.getElementById('dsCashierBody');
+    if (!data.cashier_breakdown.length) {
+      cashierBody.innerHTML = `<tr><td colspan="3" style="text-align:center;color:#9ca3af;padding:16px">No transactions today</td></tr>`;
+    } else {
+      cashierBody.innerHTML = data.cashier_breakdown.map(c => `
+        <tr>
+          <td><strong>${c.cashier_name}</strong></td>
+          <td style="text-align:center">${c.orders}</td>
+          <td style="font-weight:700;text-align:right">${fmt(c.revenue)}</td>
+        </tr>`).join('');
+    }
+
+    // Hourly chart
+    const hourMap = {};
+    data.hourly_breakdown.forEach(h => { hourMap[h.hour] = h; });
+    const hourLabels = Array.from({ length: 24 }, (_, h) => {
+      const period = h < 12 ? 'AM' : 'PM';
+      const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+      return `${h12}${period}`;
+    });
+    const hourOrders = Array.from({ length: 24 }, (_, h) => hourMap[h]?.orders || 0);
+
+    const ctx = document.getElementById('dsHourlyChart').getContext('2d');
+    if (dailySummaryChartInst) dailySummaryChartInst.destroy();
+    dailySummaryChartInst = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: hourLabels,
+        datasets: [{ label: 'Orders', data: hourOrders, backgroundColor: 'rgba(79,70,229,0.8)', borderRadius: 4 }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { ticks: { stepSize: 1, precision: 0 }, grid: { color: '#f3f4f6' } },
+          x: { grid: { display: false } }
+        }
+      }
+    });
+
+    // Top items
+    const topBody = document.getElementById('dsTopItemsBody');
+    if (!data.top_items.length) {
+      topBody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:#9ca3af;padding:24px">No sales today</td></tr>`;
+    } else {
+      topBody.innerHTML = data.top_items.map((item, i) => `
+        <tr>
+          <td style="color:#6b7280;font-weight:700">${i + 1}</td>
+          <td><strong>${item.product_name}</strong></td>
+          <td style="text-align:center;font-weight:600">${item.qty}</td>
+          <td style="font-weight:700;text-align:right">${fmt(item.revenue)}</td>
+        </tr>`).join('');
+    }
+  } catch (e) { toast.error('Failed to load daily summary: ' + e.message); }
+}
+
+document.getElementById('dsRefresh').addEventListener('click', loadDailySummary);
+
 // ── Bootstrap ──────────────────────────────────────────────────────────────────
-loadDashboard();
+if (isCashier) {
+  document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+  document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('active'));
+  document.querySelector('[data-section="daily-summary"]').classList.add('active');
+  document.getElementById('section-daily-summary').classList.add('active');
+  loadDailySummary();
+} else {
+  loadDashboard();
+}

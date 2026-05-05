@@ -419,6 +419,32 @@ app.get('/api/reports/summary', auth, adminOrManager, ah(async (req, res) => {
   });
 }));
 
+// ── Daily Sales Summary (all roles) ───────────────────────────────────────────
+app.get('/api/reports/daily-summary', auth, ah(async (req, res) => {
+  const today = new Date().toISOString().slice(0, 10);
+  const [sales]  = await sql`SELECT COUNT(*)::int as orders, COALESCE(SUM(total),0) as revenue, COALESCE(SUM(discount),0) as discounts FROM orders WHERE status='completed' AND created_at::date = ${today}`;
+  const [cost]   = await sql`SELECT COALESCE(SUM(oi.cost_price * oi.quantity),0) as total_cost FROM order_items oi JOIN orders o ON oi.order_id = o.id WHERE o.status='completed' AND o.created_at::date = ${today}`;
+  const paymentBreakdown = await sql`SELECT payment_method, COUNT(*)::int as count, COALESCE(SUM(total),0) as total FROM orders WHERE status='completed' AND created_at::date = ${today} GROUP BY payment_method ORDER BY total DESC`;
+  const cashierBreakdown = await sql`SELECT u.full_name as cashier_name, COUNT(*)::int as orders, COALESCE(SUM(o.total),0) as revenue FROM orders o JOIN users u ON o.user_id = u.id WHERE o.status='completed' AND o.created_at::date = ${today} GROUP BY u.full_name ORDER BY revenue DESC`;
+  const topItems         = await sql`SELECT oi.product_name, SUM(oi.quantity)::int as qty, SUM(oi.total) as revenue FROM order_items oi JOIN orders o ON oi.order_id = o.id WHERE o.status='completed' AND o.created_at::date = ${today} GROUP BY oi.product_name ORDER BY qty DESC LIMIT 10`;
+  const hourlyBreakdown  = await sql`SELECT EXTRACT(HOUR FROM created_at)::int as hour, COUNT(*)::int as orders, COALESCE(SUM(total),0) as revenue FROM orders WHERE status='completed' AND created_at::date = ${today} GROUP BY hour ORDER BY hour ASC`;
+  const revenue   = parseFloat(sales.revenue);
+  const totalCost = parseFloat(cost.total_cost);
+  res.json({
+    date: today,
+    orders: sales.orders,
+    revenue,
+    total_cost: totalCost,
+    gross_profit: revenue - totalCost,
+    discounts: parseFloat(sales.discounts),
+    profit_margin: revenue > 0 ? ((revenue - totalCost) / revenue * 100).toFixed(1) : '0.0',
+    payment_breakdown: paymentBreakdown,
+    cashier_breakdown: cashierBreakdown,
+    top_items: topItems,
+    hourly_breakdown: hourlyBreakdown
+  });
+}));
+
 // ── SPA fallback ───────────────────────────────────────────────────────────────
 app.get('*', (req, res) => {
   if (req.path.startsWith('/api/')) return res.status(404).json({ error: 'Not found' });
