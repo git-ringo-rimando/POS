@@ -499,8 +499,161 @@ table { border-collapse: collapse; width: 100%; }
   .report-kpis { grid-template-columns: repeat(3, 1fr); }
   .charts-grid { grid-template-columns: 1fr; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MOBILE NAV — Admin sidebar overlay
+═══════════════════════════════════════════════════════════════════════════ */
+.mobile-topbar {
+  display: none; align-items: center; gap: 12px;
+  padding: 10px 16px; background: white;
+  border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; z-index: 10; flex-shrink: 0;
+}
+.mobile-menu-btn {
+  background: none; border: none; font-size: 22px;
+  cursor: pointer; padding: 4px 8px; color: var(--text); line-height: 1;
+  border-radius: var(--radius);
+}
+.mobile-menu-btn:hover { background: var(--bg); }
+.mobile-topbar-title { font-size: 16px; font-weight: 700; flex: 1; }
+.sidebar-backdrop {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.45); z-index: 99;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MOBILE CART TOGGLE — POS floating button + drawer
+═══════════════════════════════════════════════════════════════════════════ */
+.pos-cart-toggle {
+  display: none; position: fixed; bottom: 24px; right: 16px;
+  background: var(--success); color: white; border: none;
+  border-radius: 50px; padding: 13px 18px;
+  font-size: 14px; font-weight: 700; cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.25); z-index: 40;
+  align-items: center; gap: 6px;
+}
+.cart-backdrop {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.45); z-index: 49;
+}
+.cart-backdrop.active { display: block; }
+.cart-close-mobile {
+  display: none; background: none; border: none;
+  font-size: 20px; cursor: pointer; color: var(--text-muted);
+  padding: 2px 6px; border-radius: var(--radius); line-height: 1;
+  flex-shrink: 0;
+}
+.cart-close-mobile:hover { background: var(--bg); color: var(--text); }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   RESPONSIVE ≤768px (tablets & phones)
+═══════════════════════════════════════════════════════════════════════════ */
 @media (max-width: 768px) {
+  /* Admin: hide static sidebar, show mobile topbar */
   .sidebar { display: none; }
-  .products-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
-  .cart-panel { width: 280px; min-width: 280px; }
+  .mobile-topbar { display: flex; }
+
+  /* Sidebar slides in as overlay when .sidebar-open is set */
+  .admin-layout.sidebar-open .sidebar {
+    display: flex !important; position: fixed; top: 0; left: 0; bottom: 0;
+    width: 260px; z-index: 100;
+    box-shadow: 4px 0 24px rgba(0,0,0,0.3);
+    animation: slideInLeft 0.22s ease;
+  }
+  .admin-layout.sidebar-open .sidebar-backdrop { display: block; }
+
+  /* Section layout */
+  .section-header { padding: 14px 16px 0; flex-wrap: wrap; gap: 8px; }
+  .section-content { padding: 14px 16px; }
+  .section-title { font-size: 19px; }
+
+  /* KPI cards */
+  .kpi-grid { grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+  .kpi-card { padding: 14px 12px; gap: 10px; }
+  .kpi-icon { width: 40px; height: 40px; font-size: 20px; }
+  .kpi-value { font-size: 20px; }
+
+  /* Report KPIs & charts */
+  .report-kpis { grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px; }
+  .charts-grid { grid-template-columns: 1fr !important; }
+
+  /* Forms */
+  .form-row, .form-row-3 { grid-template-columns: 1fr; }
+  /* Prevent iOS/Safari auto-zoom on input focus (requires font-size ≥ 16px) */
+  .form-control, .form-select { font-size: 16px; }
+
+  /* Toasts */
+  .toast-container { left: 10px; right: 10px; top: 10px; }
+  .toast { min-width: unset; max-width: unset; width: 100%; }
+
+  /* Modals */
+  .modal-overlay { padding: 10px; }
+  .modal-header { padding: 12px 14px; }
+  .modal-body { padding: 12px 14px; }
+  .modal-footer { padding: 10px 14px; }
+
+  /* Filters bar */
+  .filters-bar { gap: 8px; }
+  .search-input { width: 100%; min-width: unset; }
+  .filters-bar .form-control, .filters-bar .form-select { min-width: unset; }
+
+  /* POS: products take full width, cart becomes slide-in drawer */
+  .products-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
+  .products-panel { padding: 10px 12px; }
+  .cart-panel {
+    position: fixed; top: 0; right: 0; bottom: 0;
+    width: min(340px, 100%) !important; min-width: unset !important;
+    z-index: 50; transform: translateX(100%);
+    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: -4px 0 24px rgba(0,0,0,0.2);
+  }
+  .cart-panel.cart-open { transform: translateX(0); }
+  .pos-cart-toggle { display: flex; }
+  .cart-close-mobile { display: block; }
+
+  /* POS header compact */
+  .pos-header { padding: 8px 12px; }
+  .pos-time { display: none; }
+  .pos-header-right { gap: 6px; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   RESPONSIVE ≤640px (phones)
+═══════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 640px) {
+  .kpi-card { padding: 12px 10px; }
+  .kpi-value { font-size: 18px; }
+  .report-kpis { grid-template-columns: 1fr 1fr; }
+
+  /* Stack section header title + actions vertically */
+  .section-header { flex-direction: column; align-items: flex-start; }
+  .section-content { padding: 10px 12px; }
+
+  /* POS header: hide cashier label to save space */
+  .pos-cashier { display: none; }
+  .pos-header-logo { flex: 1; min-width: 0; overflow: hidden; }
+  #posHeaderName { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px; }
+
+  /* Product cards: smaller */
+  .products-grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; }
+  .product-card { padding: 10px 8px; }
+  .product-card .p-name { font-size: 12px; }
+  .product-card .p-price { font-size: 14px; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   RESPONSIVE ≤480px (small phones)
+═══════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 480px) {
+  .kpi-grid { gap: 8px; }
+  .report-kpis { grid-template-columns: 1fr 1fr; }
+  /* Modals slide up as bottom sheets */
+  .modal-overlay { padding: 0; align-items: flex-end; }
+  .modal { border-bottom-left-radius: 0; border-bottom-right-radius: 0; max-height: 92vh; }
+  .modal-sm, .modal-md { max-width: 100%; }
+}
+
+@keyframes slideInLeft {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
 }

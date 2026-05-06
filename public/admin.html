@@ -46,8 +46,15 @@
     </div>
   </aside>
 
+  <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
   <!-- Main Content -->
   <main class="admin-main">
+    <!-- Mobile top bar — hamburger + current section name -->
+    <div class="mobile-topbar" id="mobileTopbar">
+      <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Open menu">☰</button>
+      <span class="mobile-topbar-title" id="mobileNavTitle">Dashboard</span>
+    </div>
 
     <!-- ═══ DASHBOARD ══════════════════════════════════════════════════════════ -->
     <section class="admin-section active" id="section-dashboard">
@@ -649,5 +656,32 @@
 
 <script src="/js/common.js"></script>
 <script src="/js/admin.js"></script>
+<script>
+  // Mobile sidebar toggle
+  const _adminLayout = document.querySelector('.admin-layout');
+  const _backdrop    = document.getElementById('sidebarBackdrop');
+  const _menuBtn     = document.getElementById('mobileMenuBtn');
+  const _navTitle    = document.getElementById('mobileNavTitle');
+
+  const _sectionTitles = {
+    dashboard: 'Dashboard', products: 'Products', inventory: 'Inventory',
+    categories: 'Categories', orders: 'Orders', reports: 'Reports',
+    users: 'Users', settings: 'Settings', 'daily-summary': 'Daily Sales'
+  };
+
+  function _openSidebar()  { _adminLayout.classList.add('sidebar-open');    document.body.style.overflow = 'hidden'; }
+  function _closeSidebar() { _adminLayout.classList.remove('sidebar-open'); document.body.style.overflow = ''; }
+
+  _menuBtn.addEventListener('click', _openSidebar);
+  _backdrop.addEventListener('click', _closeSidebar);
+
+  // Close sidebar + update title on nav item click
+  document.querySelectorAll('.nav-item[data-section]').forEach(item => {
+    item.addEventListener('click', () => {
+      _navTitle.textContent = _sectionTitles[item.dataset.section] || '';
+      if (window.innerWidth <= 768) _closeSidebar();
+    });
+  });
+</script>
 </body>
 </html>

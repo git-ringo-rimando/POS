@@ -42,6 +42,7 @@
     <div class="cart-panel">
       <div class="cart-header">
         <div class="flex items-center gap-2">
+          <button class="cart-close-mobile" id="cartCloseBtn" title="Back to products">←</button>
           <span class="cart-header-title">Current Order</span>
           <span class="cart-header-count" id="cartCount">0</span>
         </div>
@@ -73,6 +74,12 @@
     </div>
   </div>
 </div>
+
+<!-- Mobile cart drawer controls -->
+<button class="pos-cart-toggle" id="cartToggleBtn" aria-label="View cart">
+  🛒 <span id="cartToggleBadge">0</span> · <span id="cartToggleAmt">₱0.00</span>
+</button>
+<div class="cart-backdrop" id="cartBackdrop"></div>
 
 <!-- Payment Modal -->
 <div class="modal-overlay hidden" id="paymentModal">
@@ -164,5 +171,31 @@
 
 <script src="/js/common.js"></script>
 <script src="/js/pos.js"></script>
+<script>
+  // Mobile cart drawer
+  const _cartPanel    = document.querySelector('.cart-panel');
+  const _cartBackdrop = document.getElementById('cartBackdrop');
+  const _cartToggle   = document.getElementById('cartToggleBtn');
+  const _cartClose    = document.getElementById('cartCloseBtn');
+  const _badge        = document.getElementById('cartToggleBadge');
+  const _toggleAmt    = document.getElementById('cartToggleAmt');
+
+  function _openCart()  { _cartPanel.classList.add('cart-open');    _cartBackdrop.classList.add('active');    document.body.style.overflow = 'hidden'; }
+  function _closeCart() { _cartPanel.classList.remove('cart-open'); _cartBackdrop.classList.remove('active'); document.body.style.overflow = ''; }
+
+  _cartToggle.addEventListener('click', _openCart);
+  _cartBackdrop.addEventListener('click', _closeCart);
+  _cartClose.addEventListener('click', _closeCart);
+
+  // Keep floating button in sync with cart count & total (updated by pos.js)
+  const _cartCountEl = document.getElementById('cartCount');
+  const _totalEl     = document.getElementById('totalDisplay');
+  function _syncToggle() {
+    _badge.textContent      = _cartCountEl.textContent;
+    _toggleAmt.textContent  = _totalEl.textContent;
+  }
+  new MutationObserver(_syncToggle).observe(_cartCountEl, { childList: true, subtree: true, characterData: true });
+  new MutationObserver(_syncToggle).observe(_totalEl,     { childList: true, subtree: true, characterData: true });
+</script>
 </body>
 </html>
