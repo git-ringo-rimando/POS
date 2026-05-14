@@ -13,7 +13,7 @@ document.getElementById('dashGreeting').textContent = h < 12 ? 'Good morning!' :
 document.getElementById('logoutBtn').addEventListener('click', async () => {
   try { await api.post('/auth/logout', {}); } catch {}
   clearSession();
-  window.location.href = '/login.html';
+  window.location.href = '/sales/pos/admin.html';
 });
 document.getElementById('posLink').addEventListener('click', () => window.location.href = '/pos.html');
 

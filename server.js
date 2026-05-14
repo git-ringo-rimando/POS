@@ -739,14 +739,14 @@ app.get('/api/loyalty/members/:id/history', auth, adminOnly, ah(async (req, res)
 // ── Protected pages ────────────────────────────────────────────────────────────
 app.get('/sales/pos/admin.html', (req, res) => {
   const token = extractToken(req);
-  if (!token) return res.sendFile(path.join(__dirname, 'public', 'login.html'));
+  if (!token) return res.sendFile(path.join(__dirname, 'views', 'login.html'));
   try {
     const user = jwt.verify(token, SECRET);
-    if (!['admin', 'account_manager', 'cashier'].includes(user.role)) return res.sendFile(path.join(__dirname, 'public', 'login.html'));
+    if (!['admin', 'account_manager', 'cashier'].includes(user.role)) return res.sendFile(path.join(__dirname, 'views', 'login.html'));
     res.sendFile(path.join(__dirname, 'views', 'admin.html'));
   } catch {
     res.clearCookie('pos_token');
-    res.sendFile(path.join(__dirname, 'public', 'login.html'));
+    res.sendFile(path.join(__dirname, 'views', 'login.html'));
   }
 });
 

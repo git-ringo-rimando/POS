@@ -3,60 +3,60 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>POS Login</title>
+  <title>Aling Inday Kamuning</title>
   <link rel="stylesheet" href="/css/style.css" />
+  <style>
+    body { background: #f9fafb; }
+    .branch-page {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 24px;
+      padding: 32px 16px;
+      text-align: center;
+    }
+    .branch-logo-wrap {
+      width: 140px;
+      height: 140px;
+      border-radius: 28px;
+      background: linear-gradient(135deg, #4f46e5, #7c3aed);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 64px;
+      overflow: hidden;
+      box-shadow: 0 8px 40px rgba(79,70,229,.25);
+    }
+    .branch-name {
+      font-size: 30px;
+      font-weight: 800;
+      color: #111827;
+      line-height: 1.2;
+    }
+    .branch-sub {
+      font-size: 15px;
+      color: #9ca3af;
+      margin-top: 6px;
+    }
+  </style>
 </head>
 <body>
-  <div class="login-page">
-    <div class="login-card">
-      <div class="login-logo">
-        <div class="logo-icon" id="loginLogo">🛒</div>
-        <h1 id="loginBrandName">POS System</h1>
-        <p>Point of Sale Management</p>
-      </div>
-      <div id="loginError" class="login-error hidden"></div>
-      <form class="login-form" id="loginForm" autocomplete="on">
-        <div class="form-group">
-          <label class="form-label" for="username">Username</label>
-          <input class="form-control" id="username" name="username" type="text" placeholder="Enter username" autocomplete="username" required />
-        </div>
-        <div class="form-group">
-          <label class="form-label" for="password">Password</label>
-          <input class="form-control" id="password" name="password" type="password" placeholder="Enter password" autocomplete="current-password" required />
-        </div>
-        <button type="submit" class="btn btn-primary btn-block btn-lg" id="loginBtn">Sign In</button>
-      </form>
+  <div class="branch-page">
+    <div class="branch-logo-wrap" id="branchLogo">🛒</div>
+    <div>
+      <div class="branch-name" id="branchName">Aling Inday Kamuning</div>
+      <div class="branch-sub">Point of Sale</div>
     </div>
   </div>
   <script src="/js/common.js"></script>
   <script>
     loadAppSettings().then(s => {
-      const name = s.business_name || 'POS System';
-      document.title = name + ' — Login';
-      document.getElementById('loginBrandName').textContent = name;
-      applyLogoToEl(document.getElementById('loginLogo'), s, 'max-height:80px;width:auto');
-    });
-
-    document.getElementById('loginForm').addEventListener('submit', async e => {
-      e.preventDefault();
-      const btn = document.getElementById('loginBtn');
-      const errEl = document.getElementById('loginError');
-      errEl.classList.add('hidden');
-      btn.disabled = true;
-      btn.textContent = 'Signing in…';
-      try {
-        const data = await api.post('/auth/login', {
-          username: document.getElementById('username').value.trim(),
-          password: document.getElementById('password').value
-        });
-        saveSession(data.token, data.user);
-        window.location.href = ['admin', 'account_manager'].includes(data.user.role) ? '/sales/pos/admin.html' : '/pos.html';
-      } catch (err) {
-        errEl.textContent = err.message || 'Login failed';
-        errEl.classList.remove('hidden');
-        btn.disabled = false;
-        btn.textContent = 'Sign In';
-      }
+      const name = s.business_name || 'Aling Inday Kamuning';
+      document.title = name;
+      document.getElementById('branchName').textContent = name;
+      applyLogoToEl(document.getElementById('branchLogo'), s, 'width:100%;height:100%;object-fit:contain;border-radius:28px');
     });
   </script>
 </body>

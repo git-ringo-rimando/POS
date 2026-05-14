@@ -15,7 +15,7 @@ document.getElementById('cashierName').textContent = user.full_name || user.user
 const adminLink = document.getElementById('adminLink');
 adminLink.classList.remove('hidden');
 if (!['admin', 'account_manager'].includes(user.role)) adminLink.textContent = '📅 Daily Summary';
-document.getElementById('logoutBtn').addEventListener('click', () => { clearSession(); window.location.href = '/login.html'; });
+document.getElementById('logoutBtn').addEventListener('click', () => { clearSession(); window.location.href = '/sales/pos/admin.html'; });
 
 // Live clock
 function updateTime() {
