@@ -7,200 +7,102 @@
   <link rel="stylesheet" href="/css/style.css" />
   <style>
     .loyalty-topbar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      background: #fff;
-      border-bottom: 1px solid #e5e7eb;
-      padding: 12px 24px;
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      gap: 12px;
+      display: flex; align-items: center; justify-content: space-between;
+      background: #fff; border-bottom: 1px solid #e5e7eb;
+      padding: 12px 24px; position: sticky; top: 0; z-index: 100; gap: 12px;
     }
-    .loyalty-topbar-brand {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
+    .loyalty-topbar-brand { display: flex; align-items: center; gap: 12px; }
     .loyalty-topbar-logo {
-      width: 36px;
-      height: 36px;
-      border-radius: 8px;
-      background: linear-gradient(135deg,#4f46e5,#7c3aed);
-      color: #fff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 18px;
-      overflow: hidden;
-      flex-shrink: 0;
+      width: 36px; height: 36px; border-radius: 8px;
+      background: linear-gradient(135deg,#4f46e5,#7c3aed); color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; overflow: hidden; flex-shrink: 0;
     }
-    .loyalty-topbar-title {
-      font-size: 15px;
-      font-weight: 700;
-      color: #111827;
-      line-height: 1.2;
-    }
-    .loyalty-topbar-sub {
-      font-size: 11px;
-      color: #9ca3af;
-      font-weight: 500;
-    }
+    .loyalty-topbar-title { font-size: 15px; font-weight: 700; color: #111827; line-height: 1.2; }
+    .loyalty-topbar-sub  { font-size: 11px; color: #9ca3af; font-weight: 500; }
     .loyalty-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      background: linear-gradient(135deg,#4f46e5,#7c3aed);
-      color: #fff;
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: .5px;
-      text-transform: uppercase;
-      padding: 3px 10px;
-      border-radius: 20px;
+      display: inline-flex; align-items: center; gap: 4px;
+      background: linear-gradient(135deg,#4f46e5,#7c3aed); color: #fff;
+      font-size: 11px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase;
+      padding: 3px 10px; border-radius: 20px;
     }
-    .air-page {
-      min-height: 100vh;
-      background: #f9fafb;
-    }
+    .air-page { min-height: 100vh; background: #f9fafb; }
     .air-login-wrap {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      padding: 24px;
+      display: flex; align-items: center; justify-content: center;
+      min-height: 100vh; padding: 24px;
     }
     .air-login-card {
-      background: #fff;
-      border-radius: 16px;
-      box-shadow: 0 4px 24px rgba(0,0,0,.08);
-      padding: 40px 36px;
-      width: 100%;
-      max-width: 380px;
+      background: #fff; border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,.08);
+      padding: 40px 36px; width: 100%; max-width: 380px;
     }
-    .air-login-header {
-      text-align: center;
-      margin-bottom: 28px;
-    }
-    .air-login-header h2 {
-      font-size: 22px;
-      font-weight: 800;
-      color: #111827;
-      margin: 12px 0 4px;
-    }
-    .air-login-header p { font-size: 13px; color: #6b7280; margin: 0; }
-    .air-content {
-      max-width: 1100px;
-      margin: 0 auto;
-      padding: 28px 24px;
-    }
+    .air-login-header { text-align: center; margin-bottom: 28px; }
+    .air-login-header h2 { font-size: 22px; font-weight: 800; color: #111827; margin: 12px 0 4px; }
+    .air-login-header p  { font-size: 13px; color: #6b7280; margin: 0; }
+    .air-content { max-width: 1100px; margin: 0 auto; padding: 28px 24px; }
     .stat-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-      gap: 16px;
-      margin-bottom: 24px;
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 16px; margin-bottom: 24px;
     }
     .stat-card {
-      background: #fff;
-      border-radius: 12px;
-      border: 1px solid #e5e7eb;
-      padding: 20px;
-      display: flex;
-      align-items: center;
-      gap: 14px;
+      background: #fff; border-radius: 12px; border: 1px solid #e5e7eb;
+      padding: 20px; display: flex; align-items: center; gap: 14px;
     }
     .stat-icon {
-      width: 44px;
-      height: 44px;
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 20px;
-      flex-shrink: 0;
+      width: 44px; height: 44px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; flex-shrink: 0;
     }
     .stat-icon.purple { background: #ede9fe; }
     .stat-icon.blue   { background: #dbeafe; }
     .stat-icon.green  { background: #dcfce7; }
     .stat-label { font-size: 12px; color: #6b7280; font-weight: 500; margin-bottom: 2px; }
     .stat-value { font-size: 24px; font-weight: 800; color: #111827; line-height: 1; }
-    .air-card {
-      background: #fff;
-      border-radius: 12px;
-      border: 1px solid #e5e7eb;
-      overflow: hidden;
-    }
+    .air-card { background: #fff; border-radius: 12px; border: 1px solid #e5e7eb; overflow: hidden; }
     .air-card-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 16px 20px;
-      border-bottom: 1px solid #f3f4f6;
-      gap: 12px;
-      flex-wrap: wrap;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 20px; border-bottom: 1px solid #f3f4f6; gap: 12px; flex-wrap: wrap;
     }
-    .air-card-title {
-      font-size: 15px;
-      font-weight: 700;
-      color: #111827;
-    }
-    .search-wrap {
-      position: relative;
-      flex: 1;
-      min-width: 200px;
-      max-width: 320px;
-    }
-    .search-wrap input {
-      padding-left: 34px;
-      width: 100%;
-      box-sizing: border-box;
-    }
+    .air-card-title { font-size: 15px; font-weight: 700; color: #111827; }
+    .search-wrap { position: relative; flex: 1; min-width: 200px; max-width: 320px; }
+    .search-wrap input { padding-left: 34px; width: 100%; box-sizing: border-box; }
     .search-wrap::before {
-      content: '🔍';
-      position: absolute;
-      left: 10px;
-      top: 50%;
-      transform: translateY(-50%);
-      font-size: 13px;
-      pointer-events: none;
+      content: '🔍'; position: absolute; left: 10px; top: 50%;
+      transform: translateY(-50%); font-size: 13px; pointer-events: none;
     }
     .pts-badge {
-      display: inline-block;
-      background: #ede9fe;
-      color: #6d28d9;
-      font-weight: 700;
-      font-size: 12px;
-      padding: 2px 10px;
-      border-radius: 12px;
+      display: inline-block; background: #ede9fe; color: #6d28d9;
+      font-weight: 700; font-size: 12px; padding: 2px 10px; border-radius: 12px;
     }
     .member-avatar {
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      background: linear-gradient(135deg,#4f46e5,#7c3aed);
-      color: #fff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 700;
-      font-size: 13px;
-      flex-shrink: 0;
+      width: 32px; height: 32px; border-radius: 50%;
+      background: linear-gradient(135deg,#4f46e5,#7c3aed); color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 13px; flex-shrink: 0;
     }
-    .topbar-right { display: flex; align-items: center; gap: 12px; }
+    .topbar-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
     .topbar-user { font-size: 13px; color: #374151; font-weight: 600; }
+    .tier-row { display: grid; grid-template-columns: 1fr 120px 120px 60px; gap: 8px; align-items: center; margin-bottom: 10px; }
+    .tier-row-header { font-size: 11px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: .5px; padding-bottom: 4px; border-bottom: 1px solid #f3f4f6; margin-bottom: 8px; }
+    .tier-active-toggle { display: flex; align-items: center; justify-content: center; }
+    .history-row td { font-size: 13px; }
+    .history-field { display: inline-block; background: #f3f4f6; color: #374151; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px; }
+    .history-old { color: #dc2626; text-decoration: line-through; font-size: 12px; }
+    .history-new { color: #059669; font-weight: 600; font-size: 12px; }
+    .btn-icon { background: none; border: 1px solid #e5e7eb; border-radius: 6px; padding: 4px 8px; cursor: pointer; font-size: 13px; transition: background .15s; }
+    .btn-icon:hover { background: #f3f4f6; }
     @media (max-width: 600px) {
       .air-login-card { padding: 28px 20px; }
       .air-content { padding: 16px; }
       .air-card-header { flex-direction: column; align-items: flex-start; }
       .search-wrap { max-width: 100%; }
+      .tier-row { grid-template-columns: 1fr 90px 90px 50px; }
     }
   </style>
 </head>
 <body>
 <div class="air-page">
 
-  <!-- ── LOGIN VIEW ──────────────────────────────────────────────────────── -->
+  <!-- LOGIN VIEW -->
   <div id="loginWrap" class="air-login-wrap">
     <div class="air-login-card">
       <div class="air-login-header">
@@ -212,13 +114,11 @@
       <form class="login-form" id="loginForm" autocomplete="on">
         <div class="form-group">
           <label class="form-label" for="loginUser">Username</label>
-          <input class="form-control" id="loginUser" type="text" placeholder="Enter username"
-                 autocomplete="username" required />
+          <input class="form-control" id="loginUser" type="text" placeholder="Enter username" autocomplete="username" required />
         </div>
         <div class="form-group">
           <label class="form-label" for="loginPass">Password</label>
-          <input class="form-control" id="loginPass" type="password" placeholder="Enter password"
-                 autocomplete="current-password" required />
+          <input class="form-control" id="loginPass" type="password" placeholder="Enter password" autocomplete="current-password" required />
         </div>
         <button type="submit" class="btn btn-primary btn-block btn-lg" id="loginBtn">Sign In</button>
       </form>
@@ -228,10 +128,9 @@
     </div>
   </div>
 
-  <!-- ── ADMIN DASHBOARD VIEW ────────────────────────────────────────────── -->
+  <!-- ADMIN DASHBOARD VIEW -->
   <div id="adminWrap" class="hidden">
 
-    <!-- Top bar -->
     <div class="loyalty-topbar">
       <div class="loyalty-topbar-brand">
         <div class="loyalty-topbar-logo" id="topbarLogo">⭐</div>
@@ -242,40 +141,28 @@
       </div>
       <div class="topbar-right">
         <span class="loyalty-badge">⭐ Admin</span>
+        <button class="btn btn-secondary" id="pointsTableBtn" style="padding:6px 14px;font-size:13px">⚙ Points Table</button>
         <span class="topbar-user" id="topbarUser"></span>
         <button class="btn btn-secondary" id="logoutBtn" style="padding:6px 14px;font-size:13px">Sign Out</button>
       </div>
     </div>
 
-    <!-- Content -->
     <div class="air-content">
-
-      <!-- Stats -->
       <div class="stat-grid">
         <div class="stat-card">
           <div class="stat-icon purple">👥</div>
-          <div>
-            <div class="stat-label">Total Members</div>
-            <div class="stat-value" id="statTotal">—</div>
-          </div>
+          <div><div class="stat-label">Total Members</div><div class="stat-value" id="statTotal">—</div></div>
         </div>
         <div class="stat-card">
           <div class="stat-icon blue">🏆</div>
-          <div>
-            <div class="stat-label">Total Points</div>
-            <div class="stat-value" id="statPoints">—</div>
-          </div>
+          <div><div class="stat-label">Total Points</div><div class="stat-value" id="statPoints">—</div></div>
         </div>
         <div class="stat-card">
           <div class="stat-icon green">📅</div>
-          <div>
-            <div class="stat-label">Joined This Month</div>
-            <div class="stat-value" id="statMonth">—</div>
-          </div>
+          <div><div class="stat-label">Joined This Month</div><div class="stat-value" id="statMonth">—</div></div>
         </div>
       </div>
 
-      <!-- Member table -->
       <div class="air-card">
         <div class="air-card-header">
           <div class="air-card-title">Loyalty Members</div>
@@ -294,33 +181,122 @@
                 <th>Email</th>
                 <th style="text-align:center">Points</th>
                 <th>Member Since</th>
+                <th style="text-align:center">Actions</th>
               </tr>
             </thead>
             <tbody id="memberBody">
-              <tr><td colspan="6" style="text-align:center;padding:48px;color:#9ca3af">Loading…</td></tr>
+              <tr><td colspan="7" style="text-align:center;padding:48px;color:#9ca3af">Loading…</td></tr>
             </tbody>
           </table>
         </div>
       </div>
-
     </div>
   </div>
+</div>
 
+<!-- POINTS TABLE MODAL -->
+<div class="modal-overlay hidden" id="pointsModal">
+  <div class="modal modal-md">
+    <div class="modal-header">
+      <h3 class="modal-title">⚙ Points Earning Table</h3>
+      <button class="btn-close" id="closePointsModal">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:#6b7280;margin-bottom:16px">Define 5 tiers — when a purchase meets the minimum spend, the customer earns the set points.</p>
+      <div class="tier-row tier-row-header">
+        <span>Tier Name</span><span>Min Spend (₱)</span><span>Points Earned</span><span>Active</span>
+      </div>
+      <div id="tiersForm"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" id="cancelPointsModal">Cancel</button>
+      <button class="btn btn-primary" id="savePointsBtn">Save Points Table</button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT MEMBER MODAL -->
+<div class="modal-overlay hidden" id="editModal">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <h3 class="modal-title">Edit Member</h3>
+      <button class="btn-close" id="closeEditModal">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="editMemberId" />
+      <div class="form-group">
+        <label class="form-label">Full Name *</label>
+        <input class="form-control" id="editFullName" placeholder="Full name" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Contact Number *</label>
+        <input class="form-control" id="editContact" type="tel" placeholder="Contact number" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email Address *</label>
+        <input class="form-control" id="editEmail" type="email" placeholder="Email address" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Points</label>
+        <input class="form-control" id="editPoints" type="number" min="0" placeholder="0" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Member Since</label>
+        <input class="form-control" id="editSince" type="datetime-local" />
+      </div>
+      <div id="editError" style="color:#dc2626;font-size:13px;margin-top:4px;display:none"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" id="cancelEditModal">Cancel</button>
+      <button class="btn btn-primary" id="saveEditBtn">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- AUDIT HISTORY MODAL -->
+<div class="modal-overlay hidden" id="historyModal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <h3 class="modal-title" id="historyModalTitle">Audit History</h3>
+      <button class="btn-close" id="closeHistoryModal">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="historyContent">
+        <div style="text-align:center;padding:40px;color:#9ca3af">Loading…</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" id="closeHistoryBtn">Close</button>
+    </div>
+  </div>
 </div>
 
 <script src="/js/common.js"></script>
 <script>
-  const ADMIN_TOKEN_KEY = 'pos_token';
-  const ADMIN_USER_KEY  = 'pos_user';
-
   let _allMembers = [];
+  let _tiers = [];
+  let _currentUser = null;
 
-  function getAdminToken()  { return localStorage.getItem(ADMIN_TOKEN_KEY); }
-  function getAdminUser()   { try { return JSON.parse(localStorage.getItem(ADMIN_USER_KEY)); } catch { return null; } }
+  function getAdminToken() { return localStorage.getItem('pos_token'); }
+  function getAdminUser()  { try { return JSON.parse(localStorage.getItem('pos_user')); } catch { return null; } }
 
   function fmtDate(iso) {
     if (!iso) return '—';
-    return new Date(iso).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' });
+    return new Date(iso).toLocaleDateString('en-PH', { year:'numeric', month:'short', day:'numeric' });
+  }
+  function fmtDateTime(iso) {
+    if (!iso) return '—';
+    return new Date(iso).toLocaleString('en-PH', { year:'numeric', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
+  }
+
+  async function authFetch(url, opts = {}) {
+    const res = await fetch(url, {
+      ...opts,
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getAdminToken(), ...(opts.headers || {}) }
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'Request failed');
+    return data;
   }
 
   function applyBranding(s) {
@@ -328,11 +304,12 @@
     document.title = name + ' — Loyalty Admin';
     document.getElementById('loginBrandName').textContent = name + ' Loyalty';
     document.getElementById('topbarBrandName').textContent = name + ' Loyalty';
-    applyLogoToEl(document.getElementById('loginLogo'),   s, 'width:100%;height:100%;object-fit:contain;border-radius:14px');
-    applyLogoToEl(document.getElementById('topbarLogo'),  s, 'width:100%;height:100%;object-fit:contain;border-radius:8px');
+    applyLogoToEl(document.getElementById('loginLogo'), s, 'width:100%;height:100%;object-fit:contain;border-radius:14px');
+    applyLogoToEl(document.getElementById('topbarLogo'), s, 'width:100%;height:100%;object-fit:contain;border-radius:8px');
   }
 
   function showAdmin(user) {
+    _currentUser = user;
     document.getElementById('loginWrap').classList.add('hidden');
     document.getElementById('adminWrap').classList.remove('hidden');
     document.getElementById('topbarUser').textContent = user.full_name || user.username;
@@ -344,10 +321,11 @@
     document.getElementById('loginWrap').classList.remove('hidden');
   }
 
+  // ── Member Table ──────────────────────────────────────────────────────────
   function renderTable(members) {
     const tbody = document.getElementById('memberBody');
     if (!members.length) {
-      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:48px;color:#9ca3af">No members found</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:48px;color:#9ca3af">No members found</td></tr>';
       return;
     }
     tbody.innerHTML = members.map((m, i) => `
@@ -355,7 +333,7 @@
         <td style="color:#9ca3af;font-size:12px">${i + 1}</td>
         <td>
           <div style="display:flex;align-items:center;gap:10px">
-            <div class="member-avatar">${(m.full_name || '?')[0].toUpperCase()}</div>
+            <div class="member-avatar">${(m.full_name||'?')[0].toUpperCase()}</div>
             <div>
               <div style="font-weight:600;color:#111827">${m.full_name}</div>
               <div style="font-size:11px;color:#9ca3af">ID #${m.id}</div>
@@ -364,100 +342,207 @@
         </td>
         <td>${m.contact_number}</td>
         <td style="color:#6b7280">${m.email}</td>
-        <td style="text-align:center"><span class="pts-badge">${(m.points || 0).toLocaleString()} pts</span></td>
+        <td style="text-align:center"><span class="pts-badge">${(m.points||0).toLocaleString()} pts</span></td>
         <td style="color:#6b7280;font-size:13px">${fmtDate(m.created_at)}</td>
+        <td style="text-align:center;white-space:nowrap">
+          <button class="btn-icon" title="Edit" onclick="openEdit(${m.id})">✏️</button>
+          <button class="btn-icon" title="Audit History" onclick="openHistory(${m.id}, '${m.full_name.replace(/'/g,"\\'")}')">📋</button>
+        </td>
       </tr>`).join('');
   }
 
   async function loadMembers() {
     const tbody = document.getElementById('memberBody');
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:48px;color:#9ca3af">Loading…</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:48px;color:#9ca3af">Loading…</td></tr>';
     try {
-      const token = getAdminToken();
-      const res = await fetch('/api/loyalty/members', {
-        headers: { 'Authorization': 'Bearer ' + token }
-      });
-      if (!res.ok) {
-        const d = await res.json();
-        throw new Error(d.error || 'Failed to load');
-      }
-      _allMembers = await res.json();
+      _allMembers = await authFetch('/api/loyalty/members');
       renderTable(_allMembers);
-
-      // Stats
       document.getElementById('statTotal').textContent = _allMembers.length.toLocaleString();
       const totalPts = _allMembers.reduce((s, m) => s + (m.points || 0), 0);
       document.getElementById('statPoints').textContent = totalPts.toLocaleString();
       const thisMonth = new Date().toISOString().slice(0, 7);
-      const monthCount = _allMembers.filter(m => m.created_at?.slice(0, 7) === thisMonth).length;
-      document.getElementById('statMonth').textContent = monthCount.toLocaleString();
+      document.getElementById('statMonth').textContent = _allMembers.filter(m => m.created_at?.slice(0, 7) === thisMonth).length.toLocaleString();
     } catch (e) {
-      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:48px;color:#ef4444">${e.message}</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:48px;color:#ef4444">${e.message}</td></tr>`;
     }
   }
 
-  // Load branding
+  // ── Edit Member ───────────────────────────────────────────────────────────
+  function openEdit(id) {
+    const m = _allMembers.find(x => x.id === id);
+    if (!m) return;
+    document.getElementById('editMemberId').value = m.id;
+    document.getElementById('editFullName').value  = m.full_name;
+    document.getElementById('editContact').value   = m.contact_number;
+    document.getElementById('editEmail').value     = m.email;
+    document.getElementById('editPoints').value    = m.points;
+    // Convert to datetime-local format
+    const dt = new Date(m.created_at);
+    document.getElementById('editSince').value = new Date(dt.getTime() - dt.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+    document.getElementById('editError').style.display = 'none';
+    document.getElementById('editModal').classList.remove('hidden');
+  }
+
+  document.getElementById('closeEditModal').addEventListener('click', () => document.getElementById('editModal').classList.add('hidden'));
+  document.getElementById('cancelEditModal').addEventListener('click', () => document.getElementById('editModal').classList.add('hidden'));
+
+  document.getElementById('saveEditBtn').addEventListener('click', async () => {
+    const id  = parseInt(document.getElementById('editMemberId').value);
+    const errEl = document.getElementById('editError');
+    const btn   = document.getElementById('saveEditBtn');
+    errEl.style.display = 'none';
+    btn.disabled = true; btn.textContent = 'Saving…';
+    try {
+      await authFetch(`/api/loyalty/members/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          full_name:      document.getElementById('editFullName').value.trim(),
+          contact_number: document.getElementById('editContact').value.trim(),
+          email:          document.getElementById('editEmail').value.trim(),
+          points:         parseInt(document.getElementById('editPoints').value) || 0,
+          created_at:     new Date(document.getElementById('editSince').value).toISOString()
+        })
+      });
+      document.getElementById('editModal').classList.add('hidden');
+      await loadMembers();
+      showToast('Member updated', 'success');
+    } catch (e) {
+      errEl.textContent = e.message;
+      errEl.style.display = 'block';
+    } finally {
+      btn.disabled = false; btn.textContent = 'Save Changes';
+    }
+  });
+
+  // ── Audit History ─────────────────────────────────────────────────────────
+  async function openHistory(id, name) {
+    document.getElementById('historyModalTitle').textContent = `Audit History — ${name}`;
+    document.getElementById('historyContent').innerHTML = '<div style="text-align:center;padding:40px;color:#9ca3af">Loading…</div>';
+    document.getElementById('historyModal').classList.remove('hidden');
+    try {
+      const rows = await authFetch(`/api/loyalty/members/${id}/history`);
+      if (!rows.length) {
+        document.getElementById('historyContent').innerHTML = '<div style="text-align:center;padding:40px;color:#9ca3af">No changes recorded yet</div>';
+        return;
+      }
+      const fieldLabels = { full_name:'Full Name', contact_number:'Contact Number', email:'Email', points:'Points', created_at:'Member Since' };
+      document.getElementById('historyContent').innerHTML = `
+        <table class="table">
+          <thead><tr><th>Date / Time</th><th>Field Changed</th><th>Old Value</th><th>New Value</th><th>Changed By</th></tr></thead>
+          <tbody>${rows.map(r => `
+            <tr class="history-row">
+              <td style="font-size:12px;color:#6b7280;white-space:nowrap">${fmtDateTime(r.changed_at)}</td>
+              <td><span class="history-field">${fieldLabels[r.field_changed] || r.field_changed}</span></td>
+              <td><span class="history-old">${r.old_value ?? '—'}</span></td>
+              <td><span class="history-new">${r.new_value ?? '—'}</span></td>
+              <td style="font-size:13px">${r.changed_by}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>`;
+    } catch (e) {
+      document.getElementById('historyContent').innerHTML = `<div style="text-align:center;padding:40px;color:#ef4444">${e.message}</div>`;
+    }
+  }
+
+  document.getElementById('closeHistoryModal').addEventListener('click', () => document.getElementById('historyModal').classList.add('hidden'));
+  document.getElementById('closeHistoryBtn').addEventListener('click', () => document.getElementById('historyModal').classList.add('hidden'));
+
+  // ── Points Table ──────────────────────────────────────────────────────────
+  document.getElementById('pointsTableBtn').addEventListener('click', async () => {
+    document.getElementById('pointsModal').classList.remove('hidden');
+    document.getElementById('tiersForm').innerHTML = '<div style="text-align:center;padding:20px;color:#9ca3af">Loading…</div>';
+    try {
+      _tiers = await authFetch('/api/loyalty/tiers');
+      renderTiersForm(_tiers);
+    } catch (e) {
+      document.getElementById('tiersForm').innerHTML = `<div style="color:#ef4444">${e.message}</div>`;
+    }
+  });
+
+  function renderTiersForm(tiers) {
+    document.getElementById('tiersForm').innerHTML = tiers.map((t, i) => `
+      <div class="tier-row">
+        <input class="form-control" style="font-size:13px" value="${t.tier_name}" data-tier="${t.id}" data-field="tier_name" placeholder="Tier ${i+1} name" />
+        <input class="form-control" style="font-size:13px;text-align:right" value="${t.min_spend}" type="number" min="0" step="1" data-tier="${t.id}" data-field="min_spend" />
+        <input class="form-control" style="font-size:13px;text-align:right" value="${t.points_earned}" type="number" min="0" step="1" data-tier="${t.id}" data-field="points_earned" />
+        <div class="tier-active-toggle">
+          <input type="checkbox" ${t.is_active ? 'checked' : ''} data-tier="${t.id}" data-field="is_active" style="width:18px;height:18px;cursor:pointer" title="${t.is_active ? 'Active' : 'Inactive'}" />
+        </div>
+      </div>`).join('');
+  }
+
+  document.getElementById('closePointsModal').addEventListener('click', () => document.getElementById('pointsModal').classList.add('hidden'));
+  document.getElementById('cancelPointsModal').addEventListener('click', () => document.getElementById('pointsModal').classList.add('hidden'));
+
+  document.getElementById('savePointsBtn').addEventListener('click', async () => {
+    const btn = document.getElementById('savePointsBtn');
+    btn.disabled = true; btn.textContent = 'Saving…';
+    try {
+      const inputs = document.getElementById('tiersForm').querySelectorAll('[data-tier]');
+      const updated = {};
+      inputs.forEach(el => {
+        const id = el.dataset.tier;
+        if (!updated[id]) updated[id] = { id: parseInt(id) };
+        const field = el.dataset.field;
+        updated[id][field] = field === 'is_active' ? el.checked : el.value;
+      });
+      await authFetch('/api/loyalty/tiers', { method: 'PUT', body: JSON.stringify({ tiers: Object.values(updated) }) });
+      document.getElementById('pointsModal').classList.add('hidden');
+      showToast('Points table saved', 'success');
+    } catch (e) {
+      showToast(e.message, 'error');
+    } finally {
+      btn.disabled = false; btn.textContent = 'Save Points Table';
+    }
+  });
+
+  // ── Bootstrap ─────────────────────────────────────────────────────────────
   loadAppSettings().then(applyBranding);
 
-  // Auto-login if valid session exists with admin/manager role
   const existingUser = getAdminUser();
   if (existingUser && getAdminToken() && ['admin', 'account_manager'].includes(existingUser.role)) {
     showAdmin(existingUser);
   }
 
-  // Login form
   document.getElementById('loginForm').addEventListener('submit', async e => {
     e.preventDefault();
     const btn = document.getElementById('loginBtn');
     const errEl = document.getElementById('loginError');
     errEl.classList.add('hidden');
-    btn.disabled = true;
-    btn.textContent = 'Signing in…';
+    btn.disabled = true; btn.textContent = 'Signing in…';
     try {
       const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          username: document.getElementById('loginUser').value.trim(),
-          password: document.getElementById('loginPass').value
-        })
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: document.getElementById('loginUser').value.trim(), password: document.getElementById('loginPass').value })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Login failed');
-      if (!['admin', 'account_manager'].includes(data.user.role)) {
-        throw new Error('Access restricted to admin and account managers');
-      }
+      if (!['admin', 'account_manager'].includes(data.user.role)) throw new Error('Access restricted to admin and account managers');
       saveSession(data.token, data.user);
       showAdmin(data.user);
     } catch (err) {
       errEl.textContent = err.message;
       errEl.classList.remove('hidden');
     } finally {
-      btn.disabled = false;
-      btn.textContent = 'Sign In';
+      btn.disabled = false; btn.textContent = 'Sign In';
     }
   });
 
-  // Logout
   document.getElementById('logoutBtn').addEventListener('click', () => {
-    clearSession();
-    showLogin();
+    clearSession(); showLogin();
     document.getElementById('loginUser').value = '';
     document.getElementById('loginPass').value = '';
   });
 
-  // Refresh
   document.getElementById('refreshBtn').addEventListener('click', loadMembers);
 
-  // Search
   document.getElementById('memberSearch').addEventListener('input', e => {
     const q = e.target.value.toLowerCase();
-    const filtered = _allMembers.filter(m =>
+    renderTable(_allMembers.filter(m =>
       m.full_name.toLowerCase().includes(q) ||
       m.contact_number.toLowerCase().includes(q) ||
       m.email.toLowerCase().includes(q)
-    );
-    renderTable(filtered);
+    ));
   });
 </script>
 </body>

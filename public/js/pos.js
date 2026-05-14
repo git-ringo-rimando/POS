@@ -29,6 +29,8 @@ let products = [];
 let cart = [];
 let currentCategory = 'all';
 let paymentMethod = 'cash';
+let loyaltyMember = null;
+let loyaltyTimer = null;
 
 // ── Products ───────────────────────────────────────────────────────────────────
 async function loadProducts() {
@@ -202,10 +204,47 @@ function openPayment() {
     <div class="payment-row total"><span>TOTAL</span><span>${fmt(total)}</span></div>`;
   document.getElementById('amountPaid').value = total.toFixed(2);
   document.getElementById('changeDisplay').classList.add('hidden');
+  document.getElementById('loyaltyInput').value = '';
+  document.getElementById('loyaltyStatus').textContent = '';
+  loyaltyMember = null;
   document.getElementById('paymentModal').classList.remove('hidden');
   document.getElementById('amountPaid').focus();
   document.getElementById('amountPaid').select();
 }
+
+// Loyalty number lookup
+document.getElementById('loyaltyInput').addEventListener('input', () => {
+  const val = document.getElementById('loyaltyInput').value.trim();
+  const statusEl = document.getElementById('loyaltyStatus');
+  loyaltyMember = null;
+  clearTimeout(loyaltyTimer);
+  if (!val) { statusEl.textContent = ''; return; }
+  statusEl.innerHTML = '<span style="color:#9ca3af">Looking up…</span>';
+  loyaltyTimer = setTimeout(async () => {
+    try {
+      const result = await api.get(`/loyalty/lookup?contact=${encodeURIComponent(val)}`);
+      if (result.match_type === 'contact') {
+        loyaltyMember = result;
+        statusEl.innerHTML = `<span style="color:#059669;font-weight:600">✓ ${result.full_name} &nbsp;·&nbsp; ${result.points.toLocaleString()} pts</span>`;
+      } else {
+        // Name match — show suggestions, let cashier pick
+        const opts = result.results.map(m =>
+          `<span style="cursor:pointer;color:#4f46e5;font-weight:600;text-decoration:underline" data-id="${m.id}" data-name="${m.full_name}" data-contact="${m.contact_number}" data-points="${m.points}">${m.full_name} (${m.contact_number})</span>`
+        ).join('&nbsp; ');
+        statusEl.innerHTML = `<span style="color:#d97706">Name match — select: </span>${opts}`;
+        statusEl.querySelectorAll('[data-id]').forEach(el => {
+          el.addEventListener('click', () => {
+            loyaltyMember = { id: +el.dataset.id, full_name: el.dataset.name, contact_number: el.dataset.contact, points: +el.dataset.points };
+            document.getElementById('loyaltyInput').value = loyaltyMember.contact_number;
+            statusEl.innerHTML = `<span style="color:#059669;font-weight:600">✓ ${loyaltyMember.full_name} &nbsp;·&nbsp; ${loyaltyMember.points.toLocaleString()} pts</span>`;
+          });
+        });
+      }
+    } catch {
+      statusEl.innerHTML = '<span style="color:#dc2626">✕ Contact number not found in loyalty program</span>';
+    }
+  }, 400);
+});
 
 function closePayment() {
   document.getElementById('paymentModal').classList.add('hidden');
@@ -307,6 +346,9 @@ function resetAfterSale() {
   document.getElementById('receiptModal').classList.add('hidden');
   cart = [];
   document.getElementById('discountInput').value = '';
+  document.getElementById('loyaltyInput').value = '';
+  document.getElementById('loyaltyStatus').textContent = '';
+  loyaltyMember = null;
   renderCart();
 }
 document.getElementById('closeReceipt').addEventListener('click', resetAfterSale);

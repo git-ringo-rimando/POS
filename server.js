@@ -549,6 +549,68 @@ app.get('/api/loyalty/members', auth, adminOnly, ah(async (req, res) => {
   res.json(await sql`SELECT id, full_name, contact_number, email, points, created_at FROM loyalty_members ORDER BY created_at DESC`);
 }));
 
+app.get('/api/loyalty/lookup', auth, ah(async (req, res) => {
+  const q = req.query.contact?.trim();
+  if (!q) return res.status(400).json({ error: 'Contact number or name required' });
+  // Try exact contact number first
+  const [byContact] = await sql`SELECT id, full_name, contact_number, points FROM loyalty_members WHERE contact_number = ${q}`;
+  if (byContact) return res.json({ ...byContact, match_type: 'contact' });
+  // Fallback: search by name (partial, case-insensitive)
+  const byName = await sql`SELECT id, full_name, contact_number, points FROM loyalty_members WHERE full_name ILIKE ${'%' + q + '%'} ORDER BY full_name LIMIT 5`;
+  if (byName.length === 0) return res.status(404).json({ error: 'No loyalty member found' });
+  res.json({ match_type: 'name', results: byName });
+}));
+
+app.get('/api/loyalty/tiers', auth, ah(async (req, res) => {
+  res.json(await sql`SELECT * FROM loyalty_tiers ORDER BY sort_order ASC`);
+}));
+
+app.put('/api/loyalty/tiers', auth, adminOnly, ah(async (req, res) => {
+  const { tiers } = req.body;
+  if (!Array.isArray(tiers) || tiers.length !== 5) return res.status(400).json({ error: '5 tiers required' });
+  await sql.begin(async sql => {
+    for (const t of tiers) {
+      await sql`UPDATE loyalty_tiers SET tier_name=${t.tier_name}, min_spend=${parseFloat(t.min_spend)||0}, points_earned=${parseInt(t.points_earned)||1}, is_active=${!!t.is_active}, updated_at=CURRENT_TIMESTAMP WHERE id=${t.id}`;
+    }
+  });
+  res.json({ success: true });
+}));
+
+app.put('/api/loyalty/members/:id', auth, adminOnly, ah(async (req, res) => {
+  const id = parseInt(req.params.id);
+  const { full_name, contact_number, email, points, created_at } = req.body;
+  const [before] = await sql`SELECT * FROM loyalty_members WHERE id=${id}`;
+  if (!before) return res.status(404).json({ error: 'Member not found' });
+  const changedBy = req.user.full_name || req.user.username;
+  const changes = [];
+  if (full_name     !== undefined && full_name     !== before.full_name)     changes.push(['full_name',      before.full_name,                          full_name]);
+  if (contact_number!== undefined && contact_number!== before.contact_number)changes.push(['contact_number', before.contact_number,                     contact_number]);
+  if (email         !== undefined && email         !== before.email)         changes.push(['email',          before.email,                              email]);
+  if (points        !== undefined && String(points)!== String(before.points)) changes.push(['points',        String(before.points),                     String(points)]);
+  if (created_at    !== undefined)                                            changes.push(['created_at',     before.created_at?.toISOString?.() ?? String(before.created_at), created_at]);
+  try {
+    await sql`UPDATE loyalty_members SET
+      full_name      = ${full_name      ?? before.full_name},
+      contact_number = ${contact_number ?? before.contact_number},
+      email          = ${email          ?? before.email},
+      points         = ${points         != null ? parseInt(points) : before.points},
+      created_at     = ${created_at     ?? before.created_at}
+    WHERE id = ${id}`;
+    for (const [field, oldVal, newVal] of changes) {
+      await sql`INSERT INTO loyalty_member_history (member_id, member_name, changed_by, field_changed, old_value, new_value) VALUES (${id}, ${full_name ?? before.full_name}, ${changedBy}, ${field}, ${oldVal}, ${newVal})`;
+    }
+    res.json({ success: true });
+  } catch (e) {
+    if (e.code === '23505') return res.status(409).json({ error: 'Contact number or email already in use' });
+    throw e;
+  }
+}));
+
+app.get('/api/loyalty/members/:id/history', auth, adminOnly, ah(async (req, res) => {
+  const id = parseInt(req.params.id);
+  res.json(await sql`SELECT * FROM loyalty_member_history WHERE member_id=${id} ORDER BY changed_at DESC`);
+}));
+
 // ── Protected pages ────────────────────────────────────────────────────────────
 app.get('/sales/pos/admin.html', (req, res) => {
   const token = extractToken(req);

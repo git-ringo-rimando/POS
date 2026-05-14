@@ -154,6 +154,43 @@ async function initDB() {
   `;
 
   await sql`
+    CREATE TABLE IF NOT EXISTS loyalty_tiers (
+      id SERIAL PRIMARY KEY,
+      tier_name TEXT NOT NULL,
+      min_spend REAL NOT NULL DEFAULT 0,
+      points_earned INTEGER NOT NULL DEFAULT 1,
+      is_active BOOLEAN DEFAULT true,
+      sort_order INTEGER DEFAULT 0,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `;
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS loyalty_member_history (
+      id SERIAL PRIMARY KEY,
+      member_id INTEGER NOT NULL,
+      member_name TEXT NOT NULL,
+      changed_by TEXT NOT NULL,
+      field_changed TEXT NOT NULL,
+      old_value TEXT,
+      new_value TEXT,
+      changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `;
+
+  const [{ c: tierCount }] = await sql`SELECT COUNT(*)::int as c FROM loyalty_tiers`;
+  if (tierCount === 0) {
+    await sql`
+      INSERT INTO loyalty_tiers (tier_name, min_spend, points_earned, is_active, sort_order) VALUES
+        ('Basic',    0,    1,  true, 1),
+        ('Silver',   500,  5,  true, 2),
+        ('Gold',     1000, 12, true, 3),
+        ('Platinum', 2000, 25, true, 4),
+        ('Diamond',  5000, 60, true, 5)
+    `;
+  }
+
+  await sql`
     INSERT INTO settings (key, value) VALUES
       ('business_name', 'Aling Inday Kamuning'),
       ('logo', NULL)
