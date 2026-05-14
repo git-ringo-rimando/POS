@@ -16,11 +16,19 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ── Middleware ─────────────────────────────────────────────────────────────────
-const auth = (req, res, next) => {
+function extractToken(req) {
   const h = req.headers.authorization;
-  if (!h?.startsWith('Bearer ')) return res.status(401).json({ error: 'Unauthorized' });
+  if (h?.startsWith('Bearer ')) return h.slice(7);
+  const cookies = req.headers.cookie || '';
+  const m = cookies.match(/(?:^|;\s*)pos_token=([^;]+)/);
+  return m ? m[1] : null;
+}
+
+const auth = (req, res, next) => {
+  const token = extractToken(req);
+  if (!token) return res.status(401).json({ error: 'Unauthorized' });
   try {
-    req.user = jwt.verify(h.slice(7), SECRET);
+    req.user = jwt.verify(token, SECRET);
     next();
   } catch {
     res.status(401).json({ error: 'Token expired or invalid' });
@@ -49,8 +57,15 @@ app.post('/api/auth/login', ah(async (req, res) => {
     return res.status(401).json({ error: 'Invalid username or password' });
   }
   const payload = { id: user.id, username: user.username, role: user.role, full_name: user.full_name };
-  res.json({ token: jwt.sign(payload, SECRET, { expiresIn: '10h' }), user: payload });
+  const token = jwt.sign(payload, SECRET, { expiresIn: '10h' });
+  res.cookie('pos_token', token, { httpOnly: true, sameSite: 'lax', maxAge: 10 * 60 * 60 * 1000 });
+  res.json({ token, user: payload });
 }));
+
+app.post('/api/auth/logout', (req, res) => {
+  res.clearCookie('pos_token');
+  res.json({ success: true });
+});
 
 // ── Users ──────────────────────────────────────────────────────────────────────
 app.get('/api/users', auth, adminOnly, ah(async (req, res) => {
@@ -467,6 +482,86 @@ app.get('/api/reports/daily-summary', auth, ah(async (req, res) => {
     hourly_breakdown: hourlyBreakdown
   });
 }));
+
+// ── Loyalty Program ────────────────────────────────────────────────────────────
+const loyaltyAuth = (req, res, next) => {
+  const h = req.headers.authorization;
+  if (!h?.startsWith('Bearer ')) return res.status(401).json({ error: 'Unauthorized' });
+  try {
+    const decoded = jwt.verify(h.slice(7), SECRET);
+    if (!decoded.loyalty_member_id) return res.status(401).json({ error: 'Invalid token' });
+    req.member = decoded;
+    next();
+  } catch {
+    res.status(401).json({ error: 'Token expired or invalid' });
+  }
+};
+
+app.get('/AIR', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'AIR.html'));
+});
+
+app.get('/AIR-admin', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'AIR-admin.html'));
+});
+
+app.post('/api/loyalty/register', ah(async (req, res) => {
+  const { full_name, contact_number, email, password } = req.body || {};
+  if (!full_name?.trim()) return res.status(400).json({ error: 'Full name is required' });
+  if (!contact_number?.trim()) return res.status(400).json({ error: 'Contact number is required' });
+  if (!email?.trim()) return res.status(400).json({ error: 'Email address is required' });
+  if (!password || password.length < 6) return res.status(400).json({ error: 'Password must be at least 6 characters' });
+  try {
+    const [m] = await sql`
+      INSERT INTO loyalty_members (full_name, contact_number, email, password)
+      VALUES (${full_name.trim()}, ${contact_number.trim()}, ${email.trim().toLowerCase()}, ${bcrypt.hashSync(password, 10)})
+      RETURNING id, full_name, contact_number, email, points, created_at
+    `;
+    const payload = { loyalty_member_id: m.id, contact_number: m.contact_number, full_name: m.full_name };
+    res.json({ token: jwt.sign(payload, SECRET, { expiresIn: '24h' }), member: { id: m.id, full_name: m.full_name, contact_number: m.contact_number, email: m.email, points: m.points, created_at: m.created_at } });
+  } catch (e) {
+    if (e.code === '23505') {
+      const msg = e.detail?.includes('contact_number') ? 'Contact number already registered' : 'Email already registered';
+      return res.status(409).json({ error: msg });
+    }
+    throw e;
+  }
+}));
+
+app.post('/api/loyalty/login', ah(async (req, res) => {
+  const { contact_number, password } = req.body || {};
+  if (!contact_number || !password) return res.status(400).json({ error: 'Contact number and password required' });
+  const [m] = await sql`SELECT * FROM loyalty_members WHERE contact_number = ${contact_number.trim()}`;
+  if (!m || !bcrypt.compareSync(password, m.password)) {
+    return res.status(401).json({ error: 'Invalid contact number or password' });
+  }
+  const payload = { loyalty_member_id: m.id, contact_number: m.contact_number, full_name: m.full_name };
+  res.json({ token: jwt.sign(payload, SECRET, { expiresIn: '24h' }), member: { id: m.id, full_name: m.full_name, contact_number: m.contact_number, email: m.email, points: m.points, created_at: m.created_at } });
+}));
+
+app.get('/api/loyalty/me', loyaltyAuth, ah(async (req, res) => {
+  const [m] = await sql`SELECT id, full_name, contact_number, email, points, created_at FROM loyalty_members WHERE id = ${req.member.loyalty_member_id}`;
+  if (!m) return res.status(404).json({ error: 'Member not found' });
+  res.json(m);
+}));
+
+app.get('/api/loyalty/members', auth, adminOnly, ah(async (req, res) => {
+  res.json(await sql`SELECT id, full_name, contact_number, email, points, created_at FROM loyalty_members ORDER BY created_at DESC`);
+}));
+
+// ── Protected pages ────────────────────────────────────────────────────────────
+app.get('/sales/pos/admin.html', (req, res) => {
+  const token = extractToken(req);
+  if (!token) return res.sendFile(path.join(__dirname, 'public', 'login.html'));
+  try {
+    const user = jwt.verify(token, SECRET);
+    if (!['admin', 'account_manager'].includes(user.role)) return res.sendFile(path.join(__dirname, 'public', 'login.html'));
+    res.sendFile(path.join(__dirname, 'views', 'admin.html'));
+  } catch {
+    res.clearCookie('pos_token');
+    res.sendFile(path.join(__dirname, 'public', 'login.html'));
+  }
+});
 
 // ── SPA fallback ───────────────────────────────────────────────────────────────
 app.get('*', (req, res) => {

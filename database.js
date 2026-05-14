@@ -142,8 +142,20 @@ async function initDB() {
   `;
 
   await sql`
+    CREATE TABLE IF NOT EXISTS loyalty_members (
+      id SERIAL PRIMARY KEY,
+      full_name TEXT NOT NULL,
+      contact_number TEXT UNIQUE NOT NULL,
+      email TEXT UNIQUE NOT NULL,
+      password TEXT NOT NULL,
+      points INTEGER DEFAULT 0,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `;
+
+  await sql`
     INSERT INTO settings (key, value) VALUES
-      ('business_name', 'Aling Inday Kamuning Branch POS'),
+      ('business_name', 'Aling Inday Kamuning'),
       ('logo', NULL)
     ON CONFLICT DO NOTHING
   `;

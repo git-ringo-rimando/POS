@@ -40,8 +40,8 @@ function clearSession() {
 }
 function requireAuth(role) {
   const user = getUser();
-  if (!user || !getToken()) { window.location.href = '/'; return false; }
-  if (role && user.role !== role) { window.location.href = user.role === 'admin' ? '/admin.html' : '/pos.html'; return false; }
+  if (!user || !getToken()) { window.location.href = '/login.html'; return false; }
+  if (role && user.role !== role) { window.location.href = user.role === 'admin' ? '/sales/pos/admin.html' : '/pos.html'; return false; }
   return true;
 }
 

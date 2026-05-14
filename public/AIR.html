@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Loyalty Rewards</title>
+  <link rel="stylesheet" href="/css/style.css" />
+  <style>
+    .loyalty-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: linear-gradient(135deg, #4f46e5, #7c3aed);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .5px;
+      text-transform: uppercase;
+      padding: 4px 12px;
+      border-radius: 20px;
+      margin-bottom: 4px;
+    }
+    .points-card {
+      background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+      border-radius: 16px;
+      color: #fff;
+      padding: 28px 24px;
+      text-align: center;
+      margin: 20px 0 16px;
+    }
+    .points-label { font-size: 12px; font-weight: 600; opacity: .8; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px; }
+    .points-value { font-size: 52px; font-weight: 800; line-height: 1; }
+    .points-unit  { font-size: 14px; font-weight: 600; opacity: .75; margin-top: 4px; }
+    .member-info  { display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: #6b7280; margin-bottom: 20px; }
+    .member-info span { display: flex; gap: 8px; }
+    .member-info strong { color: #374151; min-width: 100px; }
+    .divider-text {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 12px; color: #9ca3af; margin: 16px 0;
+    }
+    .divider-text::before, .divider-text::after {
+      content: ''; flex: 1; height: 1px; background: #e5e7eb;
+    }
+    .link-btn {
+      color: #4f46e5; text-decoration: none; font-weight: 600;
+      background: none; border: none; cursor: pointer; font-size: 14px; padding: 0;
+    }
+    .link-btn:hover { text-decoration: underline; }
+    .success-box {
+      background: #f0fdf4; border: 1px solid #bbf7d0;
+      border-radius: 8px; padding: 12px 16px;
+      color: #15803d; font-size: 13px; margin-bottom: 16px;
+      display: none;
+    }
+    .login-card { max-width: 400px; }
+  </style>
+</head>
+<body>
+<div class="login-page">
+
+  <!-- ── LOGIN VIEW ──────────────────────────────────────────────────────── -->
+  <div class="login-card" id="loginView">
+    <div class="login-logo">
+      <div class="logo-icon" id="loginLogo">🛒</div>
+      <h1 id="loginBrandName">POS System</h1>
+      <div class="loyalty-badge">⭐ Loyalty Rewards</div>
+    </div>
+    <div id="loginError" class="login-error hidden"></div>
+    <form class="login-form" id="loginForm" autocomplete="on">
+      <div class="form-group">
+        <label class="form-label" for="loginContact">Contact Number</label>
+        <input class="form-control" id="loginContact" name="username" type="tel"
+               placeholder="e.g. 09123456789" autocomplete="username" required />
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="loginPassword">Password</label>
+        <input class="form-control" id="loginPassword" name="password" type="password"
+               placeholder="Enter your password" autocomplete="current-password" required />
+      </div>
+      <button type="submit" class="btn btn-primary btn-block btn-lg" id="loginBtn">Sign In</button>
+    </form>
+    <div class="divider-text">or</div>
+    <p style="text-align:center;font-size:14px;color:#6b7280;margin:0">
+      New here? <button class="link-btn" id="showRegister">Create a loyalty account</button>
+    </p>
+  </div>
+
+  <!-- ── REGISTER VIEW ───────────────────────────────────────────────────── -->
+  <div class="login-card hidden" id="registerView">
+    <div class="login-logo">
+      <div class="logo-icon" id="registerLogo">🛒</div>
+      <h1 id="registerBrandName">POS System</h1>
+      <div class="loyalty-badge">⭐ Join Loyalty Rewards</div>
+    </div>
+    <div id="registerError" class="login-error hidden"></div>
+    <div id="registerSuccess" class="success-box">Account created! Signing you in…</div>
+    <form class="login-form" id="registerForm" autocomplete="on">
+      <div class="form-group">
+        <label class="form-label" for="regFullName">Full Name *</label>
+        <input class="form-control" id="regFullName" name="name" type="text"
+               placeholder="e.g. Maria Santos" autocomplete="name" required />
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="regContact">Contact Number *</label>
+        <input class="form-control" id="regContact" name="tel" type="tel"
+               placeholder="e.g. 09123456789" autocomplete="tel" required />
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="regEmail">Email Address *</label>
+        <input class="form-control" id="regEmail" name="email" type="email"
+               placeholder="e.g. maria@email.com" autocomplete="email" required />
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="regPassword">Password *</label>
+        <input class="form-control" id="regPassword" name="new-password" type="password"
+               placeholder="Min 6 characters" autocomplete="new-password" required minlength="6" />
+        <div class="form-hint">At least 6 characters</div>
+      </div>
+      <button type="submit" class="btn btn-primary btn-block btn-lg" id="registerBtn">Create Account</button>
+    </form>
+    <div class="divider-text">or</div>
+    <p style="text-align:center;font-size:14px;color:#6b7280;margin:0">
+      Already a member? <button class="link-btn" id="showLogin">Sign in</button>
+    </p>
+  </div>
+
+  <!-- ── MEMBER DASHBOARD ────────────────────────────────────────────────── -->
+  <div class="login-card hidden" id="dashboardView">
+    <div class="login-logo" style="margin-bottom:0">
+      <div class="logo-icon" id="dashLogo">🛒</div>
+      <h1 id="dashBrandName">POS System</h1>
+      <div class="loyalty-badge">⭐ Loyalty Member</div>
+    </div>
+    <div class="points-card">
+      <div class="points-label">Your Points Balance</div>
+      <div class="points-value" id="dashPoints">0</div>
+      <div class="points-unit">pts</div>
+    </div>
+    <div class="member-info">
+      <span><strong>Name</strong> <span id="dashName">—</span></span>
+      <span><strong>Contact</strong> <span id="dashContact">—</span></span>
+      <span><strong>Email</strong> <span id="dashEmail">—</span></span>
+      <span><strong>Member Since</strong> <span id="dashSince">—</span></span>
+    </div>
+    <button class="btn btn-secondary btn-block" id="dashLogout">Sign Out</button>
+  </div>
+
+</div>
+
+<script src="/js/common.js"></script>
+<script>
+  const LOYALTY_KEY = 'loyalty_token';
+  const LOYALTY_MEMBER_KEY = 'loyalty_member';
+
+  function getLoyaltyToken()  { return localStorage.getItem(LOYALTY_KEY); }
+  function getLoyaltyMember() { try { return JSON.parse(localStorage.getItem(LOYALTY_MEMBER_KEY)); } catch { return null; } }
+  function saveLoyaltySession(token, member) {
+    localStorage.setItem(LOYALTY_KEY, token);
+    localStorage.setItem(LOYALTY_MEMBER_KEY, JSON.stringify(member));
+  }
+  function clearLoyaltySession() {
+    localStorage.removeItem(LOYALTY_KEY);
+    localStorage.removeItem(LOYALTY_MEMBER_KEY);
+  }
+
+  function showView(id) {
+    ['loginView', 'registerView', 'dashboardView'].forEach(v => {
+      document.getElementById(v).classList.toggle('hidden', v !== id);
+    });
+  }
+
+  function fmtMemberDate(iso) {
+    if (!iso) return '—';
+    return new Date(iso).toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' });
+  }
+
+  function applyBranding(s) {
+    const name = s.business_name || 'POS System';
+    document.title = name + ' — Loyalty';
+    ['loginBrandName', 'registerBrandName', 'dashBrandName'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = name;
+    });
+    ['loginLogo', 'registerLogo', 'dashLogo'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) applyLogoToEl(el, s, 'max-height:72px;width:auto');
+    });
+  }
+
+  function showDashboard(member) {
+    document.getElementById('dashPoints').textContent  = (member.points || 0).toLocaleString();
+    document.getElementById('dashName').textContent    = member.full_name;
+    document.getElementById('dashContact').textContent = member.contact_number;
+    document.getElementById('dashEmail').textContent   = member.email;
+    document.getElementById('dashSince').textContent   = fmtMemberDate(member.created_at);
+    showView('dashboardView');
+  }
+
+  // Load branding
+  loadAppSettings().then(applyBranding);
+
+  // Auto-login if session exists
+  const existingMember = getLoyaltyMember();
+  if (existingMember && getLoyaltyToken()) {
+    showDashboard(existingMember);
+  }
+
+  // Toggle views
+  document.getElementById('showRegister').addEventListener('click', () => {
+    document.getElementById('loginError').classList.add('hidden');
+    showView('registerView');
+  });
+  document.getElementById('showLogin').addEventListener('click', () => {
+    document.getElementById('registerError').classList.add('hidden');
+    document.getElementById('registerSuccess').style.display = 'none';
+    showView('loginView');
+  });
+
+  // Login
+  document.getElementById('loginForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const btn = document.getElementById('loginBtn');
+    const errEl = document.getElementById('loginError');
+    errEl.classList.add('hidden');
+    btn.disabled = true;
+    btn.textContent = 'Signing in…';
+    try {
+      const res = await fetch('/api/loyalty/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contact_number: document.getElementById('loginContact').value.trim(),
+          password: document.getElementById('loginPassword').value
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Login failed');
+      saveLoyaltySession(data.token, data.member);
+      showDashboard(data.member);
+    } catch (err) {
+      errEl.textContent = err.message;
+      errEl.classList.remove('hidden');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Sign In';
+    }
+  });
+
+  // Register
+  document.getElementById('registerForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const btn = document.getElementById('registerBtn');
+    const errEl = document.getElementById('registerError');
+    const successEl = document.getElementById('registerSuccess');
+    errEl.classList.add('hidden');
+    successEl.style.display = 'none';
+    btn.disabled = true;
+    btn.textContent = 'Creating account…';
+    try {
+      const res = await fetch('/api/loyalty/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          full_name:      document.getElementById('regFullName').value.trim(),
+          contact_number: document.getElementById('regContact').value.trim(),
+          email:          document.getElementById('regEmail').value.trim(),
+          password:       document.getElementById('regPassword').value
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Registration failed');
+      successEl.style.display = 'block';
+      saveLoyaltySession(data.token, data.member);
+      setTimeout(() => showDashboard(data.member), 800);
+    } catch (err) {
+      errEl.textContent = err.message;
+      errEl.classList.remove('hidden');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Create Account';
+    }
+  });
+
+  // Sign out
+  document.getElementById('dashLogout').addEventListener('click', () => {
+    clearLoyaltySession();
+    showView('loginView');
+  });
+</script>
+</body>
+</html>

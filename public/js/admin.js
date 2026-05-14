@@ -10,7 +10,11 @@ document.getElementById('sidebarAvatar').textContent = (user.full_name || user.u
 document.getElementById('sidebarRoleLabel').textContent = isAdmin ? 'Administrator' : isCashier ? 'Cashier' : 'Account Manager';
 const h = new Date().getHours();
 document.getElementById('dashGreeting').textContent = h < 12 ? 'Good morning!' : h < 18 ? 'Good afternoon!' : 'Good evening!';
-document.getElementById('logoutBtn').addEventListener('click', () => { clearSession(); window.location.href = '/'; });
+document.getElementById('logoutBtn').addEventListener('click', async () => {
+  try { await api.post('/auth/logout', {}); } catch {}
+  clearSession();
+  window.location.href = '/login.html';
+});
 document.getElementById('posLink').addEventListener('click', () => window.location.href = '/pos.html');
 
 // Hide admin-only nav items for non-admins
@@ -32,7 +36,7 @@ document.querySelectorAll('.nav-item[data-section]').forEach(item => {
     item.classList.add('active');
     const section = document.getElementById('section-' + item.dataset.section);
     if (section) section.classList.add('active');
-    const loaders = { dashboard: loadDashboard, products: loadProducts, inventory: loadInventory, orders: loadOrders, users: loadUsers, categories: loadCategories, 'daily-summary': loadDailySummary, settings: loadSettingsSection };
+    const loaders = { dashboard: loadDashboard, products: loadProducts, inventory: loadInventory, orders: loadOrders, users: loadUsers, categories: loadCategories, 'daily-summary': loadDailySummary, loyalty: loadLoyaltyMembers, settings: loadSettingsSection };
     loaders[item.dataset.section]?.();
   });
 });
@@ -1226,6 +1230,54 @@ document.getElementById('saveSettingsBtn').addEventListener('click', async () =>
     toast.success('Settings saved');
   } catch (e) { toast.error(e.message); }
   finally { btn.disabled = false; btn.textContent = 'Save Changes'; }
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+// LOYALTY MEMBERS
+// ══════════════════════════════════════════════════════════════════════════════
+let _loyaltyAll = [];
+
+async function loadLoyaltyMembers() {
+  const tbody = document.getElementById('loyaltyBody');
+  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:#9ca3af">Loading…</td></tr>';
+  try {
+    _loyaltyAll = await api.get('/loyalty/members');
+    renderLoyaltyTable(_loyaltyAll);
+    document.getElementById('loyaltyTotalMembers').textContent = _loyaltyAll.length.toLocaleString();
+    const totalPts = _loyaltyAll.reduce((s, m) => s + (m.points || 0), 0);
+    document.getElementById('loyaltyTotalPoints').textContent = totalPts.toLocaleString();
+  } catch (e) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:40px;color:#ef4444">${e.message}</td></tr>`;
+  }
+}
+
+function renderLoyaltyTable(members) {
+  const tbody = document.getElementById('loyaltyBody');
+  if (!members.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:#9ca3af">No loyalty members yet</td></tr>';
+    return;
+  }
+  tbody.innerHTML = members.map((m, i) => `
+    <tr>
+      <td style="color:#9ca3af">${i + 1}</td>
+      <td><strong>${m.full_name}</strong></td>
+      <td>${m.contact_number}</td>
+      <td style="color:#6b7280">${m.email}</td>
+      <td style="text-align:center"><span style="background:#ede9fe;color:#6d28d9;font-weight:700;padding:2px 10px;border-radius:12px">${(m.points || 0).toLocaleString()} pts</span></td>
+      <td style="color:#6b7280">${fmtDate(m.created_at)}</td>
+    </tr>`).join('');
+}
+
+document.getElementById('loyaltyRefreshBtn').addEventListener('click', loadLoyaltyMembers);
+
+document.getElementById('loyaltySearch').addEventListener('input', e => {
+  const q = e.target.value.toLowerCase();
+  const filtered = _loyaltyAll.filter(m =>
+    m.full_name.toLowerCase().includes(q) ||
+    m.contact_number.toLowerCase().includes(q) ||
+    m.email.toLowerCase().includes(q)
+  );
+  renderLoyaltyTable(filtered);
 });
 
 // ── Bootstrap ──────────────────────────────────────────────────────────────────

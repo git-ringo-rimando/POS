@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Loyalty Admin</title>
+  <link rel="stylesheet" href="/css/style.css" />
+  <style>
+    .loyalty-topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #fff;
+      border-bottom: 1px solid #e5e7eb;
+      padding: 12px 24px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      gap: 12px;
+    }
+    .loyalty-topbar-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .loyalty-topbar-logo {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      background: linear-gradient(135deg,#4f46e5,#7c3aed);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .loyalty-topbar-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #111827;
+      line-height: 1.2;
+    }
+    .loyalty-topbar-sub {
+      font-size: 11px;
+      color: #9ca3af;
+      font-weight: 500;
+    }
+    .loyalty-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: linear-gradient(135deg,#4f46e5,#7c3aed);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .5px;
+      text-transform: uppercase;
+      padding: 3px 10px;
+      border-radius: 20px;
+    }
+    .air-page {
+      min-height: 100vh;
+      background: #f9fafb;
+    }
+    .air-login-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 24px;
+    }
+    .air-login-card {
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 4px 24px rgba(0,0,0,.08);
+      padding: 40px 36px;
+      width: 100%;
+      max-width: 380px;
+    }
+    .air-login-header {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+    .air-login-header h2 {
+      font-size: 22px;
+      font-weight: 800;
+      color: #111827;
+      margin: 12px 0 4px;
+    }
+    .air-login-header p { font-size: 13px; color: #6b7280; margin: 0; }
+    .air-content {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 28px 24px;
+    }
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .stat-card {
+      background: #fff;
+      border-radius: 12px;
+      border: 1px solid #e5e7eb;
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .stat-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+    .stat-icon.purple { background: #ede9fe; }
+    .stat-icon.blue   { background: #dbeafe; }
+    .stat-icon.green  { background: #dcfce7; }
+    .stat-label { font-size: 12px; color: #6b7280; font-weight: 500; margin-bottom: 2px; }
+    .stat-value { font-size: 24px; font-weight: 800; color: #111827; line-height: 1; }
+    .air-card {
+      background: #fff;
+      border-radius: 12px;
+      border: 1px solid #e5e7eb;
+      overflow: hidden;
+    }
+    .air-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      border-bottom: 1px solid #f3f4f6;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .air-card-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #111827;
+    }
+    .search-wrap {
+      position: relative;
+      flex: 1;
+      min-width: 200px;
+      max-width: 320px;
+    }
+    .search-wrap input {
+      padding-left: 34px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .search-wrap::before {
+      content: '🔍';
+      position: absolute;
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 13px;
+      pointer-events: none;
+    }
+    .pts-badge {
+      display: inline-block;
+      background: #ede9fe;
+      color: #6d28d9;
+      font-weight: 700;
+      font-size: 12px;
+      padding: 2px 10px;
+      border-radius: 12px;
+    }
+    .member-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: linear-gradient(135deg,#4f46e5,#7c3aed);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 13px;
+      flex-shrink: 0;
+    }
+    .topbar-right { display: flex; align-items: center; gap: 12px; }
+    .topbar-user { font-size: 13px; color: #374151; font-weight: 600; }
+    @media (max-width: 600px) {
+      .air-login-card { padding: 28px 20px; }
+      .air-content { padding: 16px; }
+      .air-card-header { flex-direction: column; align-items: flex-start; }
+      .search-wrap { max-width: 100%; }
+    }
+  </style>
+</head>
+<body>
+<div class="air-page">
+
+  <!-- ── LOGIN VIEW ──────────────────────────────────────────────────────── -->
+  <div id="loginWrap" class="air-login-wrap">
+    <div class="air-login-card">
+      <div class="air-login-header">
+        <div id="loginLogo" style="width:60px;height:60px;margin:0 auto;border-radius:14px;background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff;display:flex;align-items:center;justify-content:center;font-size:28px;overflow:hidden">⭐</div>
+        <h2 id="loginBrandName">Loyalty Admin</h2>
+        <p>Sign in with your POS staff account</p>
+      </div>
+      <div id="loginError" class="login-error hidden"></div>
+      <form class="login-form" id="loginForm" autocomplete="on">
+        <div class="form-group">
+          <label class="form-label" for="loginUser">Username</label>
+          <input class="form-control" id="loginUser" type="text" placeholder="Enter username"
+                 autocomplete="username" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="loginPass">Password</label>
+          <input class="form-control" id="loginPass" type="password" placeholder="Enter password"
+                 autocomplete="current-password" required />
+        </div>
+        <button type="submit" class="btn btn-primary btn-block btn-lg" id="loginBtn">Sign In</button>
+      </form>
+      <div style="margin-top:20px;text-align:center">
+        <a href="/AIR" style="font-size:13px;color:#6b7280;text-decoration:none">← Back to Loyalty Portal</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── ADMIN DASHBOARD VIEW ────────────────────────────────────────────── -->
+  <div id="adminWrap" class="hidden">
+
+    <!-- Top bar -->
+    <div class="loyalty-topbar">
+      <div class="loyalty-topbar-brand">
+        <div class="loyalty-topbar-logo" id="topbarLogo">⭐</div>
+        <div>
+          <div class="loyalty-topbar-title" id="topbarBrandName">Loyalty Admin</div>
+          <div class="loyalty-topbar-sub">Member Management</div>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <span class="loyalty-badge">⭐ Admin</span>
+        <span class="topbar-user" id="topbarUser"></span>
+        <button class="btn btn-secondary" id="logoutBtn" style="padding:6px 14px;font-size:13px">Sign Out</button>
+      </div>
+    </div>
+
+    <!-- Content -->
+    <div class="air-content">
+
+      <!-- Stats -->
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="stat-icon purple">👥</div>
+          <div>
+            <div class="stat-label">Total Members</div>
+            <div class="stat-value" id="statTotal">—</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon blue">🏆</div>
+          <div>
+            <div class="stat-label">Total Points</div>
+            <div class="stat-value" id="statPoints">—</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon green">📅</div>
+          <div>
+            <div class="stat-label">Joined This Month</div>
+            <div class="stat-value" id="statMonth">—</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Member table -->
+      <div class="air-card">
+        <div class="air-card-header">
+          <div class="air-card-title">Loyalty Members</div>
+          <div class="search-wrap">
+            <input class="form-control" id="memberSearch" placeholder="Search name, contact, email…" />
+          </div>
+          <button class="btn btn-secondary" id="refreshBtn" style="white-space:nowrap">↺ Refresh</button>
+        </div>
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Member</th>
+                <th>Contact Number</th>
+                <th>Email</th>
+                <th style="text-align:center">Points</th>
+                <th>Member Since</th>
+              </tr>
+            </thead>
+            <tbody id="memberBody">
+              <tr><td colspan="6" style="text-align:center;padding:48px;color:#9ca3af">Loading…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<script src="/js/common.js"></script>
+<script>
+  const ADMIN_TOKEN_KEY = 'pos_token';
+  const ADMIN_USER_KEY  = 'pos_user';
+
+  let _allMembers = [];
+
+  function getAdminToken()  { return localStorage.getItem(ADMIN_TOKEN_KEY); }
+  function getAdminUser()   { try { return JSON.parse(localStorage.getItem(ADMIN_USER_KEY)); } catch { return null; } }
+
+  function fmtDate(iso) {
+    if (!iso) return '—';
+    return new Date(iso).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' });
+  }
+
+  function applyBranding(s) {
+    const name = s.business_name || 'Loyalty Admin';
+    document.title = name + ' — Loyalty Admin';
+    document.getElementById('loginBrandName').textContent = name + ' Loyalty';
+    document.getElementById('topbarBrandName').textContent = name + ' Loyalty';
+    applyLogoToEl(document.getElementById('loginLogo'),   s, 'width:100%;height:100%;object-fit:contain;border-radius:14px');
+    applyLogoToEl(document.getElementById('topbarLogo'),  s, 'width:100%;height:100%;object-fit:contain;border-radius:8px');
+  }
+
+  function showAdmin(user) {
+    document.getElementById('loginWrap').classList.add('hidden');
+    document.getElementById('adminWrap').classList.remove('hidden');
+    document.getElementById('topbarUser').textContent = user.full_name || user.username;
+    loadMembers();
+  }
+
+  function showLogin() {
+    document.getElementById('adminWrap').classList.add('hidden');
+    document.getElementById('loginWrap').classList.remove('hidden');
+  }
+
+  function renderTable(members) {
+    const tbody = document.getElementById('memberBody');
+    if (!members.length) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:48px;color:#9ca3af">No members found</td></tr>';
+      return;
+    }
+    tbody.innerHTML = members.map((m, i) => `
+      <tr>
+        <td style="color:#9ca3af;font-size:12px">${i + 1}</td>
+        <td>
+          <div style="display:flex;align-items:center;gap:10px">
+            <div class="member-avatar">${(m.full_name || '?')[0].toUpperCase()}</div>
+            <div>
+              <div style="font-weight:600;color:#111827">${m.full_name}</div>
+              <div style="font-size:11px;color:#9ca3af">ID #${m.id}</div>
+            </div>
+          </div>
+        </td>
+        <td>${m.contact_number}</td>
+        <td style="color:#6b7280">${m.email}</td>
+        <td style="text-align:center"><span class="pts-badge">${(m.points || 0).toLocaleString()} pts</span></td>
+        <td style="color:#6b7280;font-size:13px">${fmtDate(m.created_at)}</td>
+      </tr>`).join('');
+  }
+
+  async function loadMembers() {
+    const tbody = document.getElementById('memberBody');
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:48px;color:#9ca3af">Loading…</td></tr>';
+    try {
+      const token = getAdminToken();
+      const res = await fetch('/api/loyalty/members', {
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      if (!res.ok) {
+        const d = await res.json();
+        throw new Error(d.error || 'Failed to load');
+      }
+      _allMembers = await res.json();
+      renderTable(_allMembers);
+
+      // Stats
+      document.getElementById('statTotal').textContent = _allMembers.length.toLocaleString();
+      const totalPts = _allMembers.reduce((s, m) => s + (m.points || 0), 0);
+      document.getElementById('statPoints').textContent = totalPts.toLocaleString();
+      const thisMonth = new Date().toISOString().slice(0, 7);
+      const monthCount = _allMembers.filter(m => m.created_at?.slice(0, 7) === thisMonth).length;
+      document.getElementById('statMonth').textContent = monthCount.toLocaleString();
+    } catch (e) {
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:48px;color:#ef4444">${e.message}</td></tr>`;
+    }
+  }
+
+  // Load branding
+  loadAppSettings().then(applyBranding);
+
+  // Auto-login if valid session exists with admin/manager role
+  const existingUser = getAdminUser();
+  if (existingUser && getAdminToken() && ['admin', 'account_manager'].includes(existingUser.role)) {
+    showAdmin(existingUser);
+  }
+
+  // Login form
+  document.getElementById('loginForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const btn = document.getElementById('loginBtn');
+    const errEl = document.getElementById('loginError');
+    errEl.classList.add('hidden');
+    btn.disabled = true;
+    btn.textContent = 'Signing in…';
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: document.getElementById('loginUser').value.trim(),
+          password: document.getElementById('loginPass').value
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Login failed');
+      if (!['admin', 'account_manager'].includes(data.user.role)) {
+        throw new Error('Access restricted to admin and account managers');
+      }
+      saveSession(data.token, data.user);
+      showAdmin(data.user);
+    } catch (err) {
+      errEl.textContent = err.message;
+      errEl.classList.remove('hidden');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Sign In';
+    }
+  });
+
+  // Logout
+  document.getElementById('logoutBtn').addEventListener('click', () => {
+    clearSession();
+    showLogin();
+    document.getElementById('loginUser').value = '';
+    document.getElementById('loginPass').value = '';
+  });
+
+  // Refresh
+  document.getElementById('refreshBtn').addEventListener('click', loadMembers);
+
+  // Search
+  document.getElementById('memberSearch').addEventListener('input', e => {
+    const q = e.target.value.toLowerCase();
+    const filtered = _allMembers.filter(m =>
+      m.full_name.toLowerCase().includes(q) ||
+      m.contact_number.toLowerCase().includes(q) ||
+      m.email.toLowerCase().includes(q)
+    );
+    renderTable(filtered);
+  });
+</script>
+</body>
+</html>
