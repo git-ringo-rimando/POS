@@ -742,7 +742,7 @@ app.get('/sales/pos/admin.html', (req, res) => {
   if (!token) return res.sendFile(path.join(__dirname, 'public', 'login.html'));
   try {
     const user = jwt.verify(token, SECRET);
-    if (!['admin', 'account_manager'].includes(user.role)) return res.sendFile(path.join(__dirname, 'public', 'login.html'));
+    if (!['admin', 'account_manager', 'cashier'].includes(user.role)) return res.sendFile(path.join(__dirname, 'public', 'login.html'));
     res.sendFile(path.join(__dirname, 'views', 'admin.html'));
   } catch {
     res.clearCookie('pos_token');
