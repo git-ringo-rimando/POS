@@ -31,6 +31,7 @@ let currentCategory = 'all';
 let paymentMethod = 'cash';
 let loyaltyMember = null;
 let loyaltyTimer = null;
+let redeemedAmount = 0;
 
 // ── Products ───────────────────────────────────────────────────────────────────
 async function loadProducts() {
@@ -132,7 +133,7 @@ function updateQty(productId, delta) {
 
 function getDiscount() { return parseFloat(document.getElementById('discountInput').value) || 0; }
 function getSubtotal() { return cart.reduce((sum, i) => sum + i.product.selling_price * i.quantity, 0); }
-function getTotal() { return Math.max(0, getSubtotal() - getDiscount()); }
+function getTotal() { return Math.max(0, getSubtotal() - getDiscount() - redeemedAmount); }
 
 function renderCart() {
   const cartItemsEl = document.getElementById('cartItems');
@@ -196,17 +197,41 @@ document.getElementById('checkoutBtn').addEventListener('click', openPayment);
 document.getElementById('closePayment').addEventListener('click', closePayment);
 document.getElementById('cancelPayment').addEventListener('click', closePayment);
 
-function openPayment() {
+function refreshPaymentSummary() {
+  const redeemRow = redeemedAmount > 0
+    ? `<div class="payment-row" style="color:#7c3aed"><span>⭐ Points Redeemed</span><span>-${fmt(redeemedAmount)}</span></div>`
+    : '';
   const total = getTotal();
   document.getElementById('paymentSummary').innerHTML = `
     <div class="payment-row"><span>Items (${cart.reduce((s,i)=>s+i.quantity,0)})</span><span>${fmt(getSubtotal())}</span></div>
     <div class="payment-row"><span>Discount</span><span>-${fmt(getDiscount())}</span></div>
+    ${redeemRow}
     <div class="payment-row total"><span>TOTAL</span><span>${fmt(total)}</span></div>`;
   document.getElementById('amountPaid').value = total.toFixed(2);
   document.getElementById('changeDisplay').classList.add('hidden');
+}
+
+function showRedeemState(state) {
+  document.getElementById('redeemIdle').style.display        = state === 'idle'    ? 'flex'  : 'none';
+  document.getElementById('redeemInputArea').style.display   = state === 'input'   ? 'block' : 'none';
+  document.getElementById('redeemApplied').style.display     = state === 'applied' ? 'flex'  : 'none';
+}
+
+function updateRedeemSection() {
+  const section = document.getElementById('redeemSection');
+  if (!loyaltyMember) { section.style.display = 'none'; return; }
+  section.style.display = 'block';
+  document.getElementById('redeemPtsDisplay').textContent = `${loyaltyMember.points.toLocaleString()} pts available (₱${loyaltyMember.points.toLocaleString()})`;
+  if (redeemedAmount === 0) showRedeemState('idle');
+}
+
+function openPayment() {
+  redeemedAmount = 0;
+  document.getElementById('redeemSection').style.display = 'none';
   document.getElementById('loyaltyInput').value = '';
   document.getElementById('loyaltyStatus').textContent = '';
   loyaltyMember = null;
+  refreshPaymentSummary();
   document.getElementById('paymentModal').classList.remove('hidden');
   document.getElementById('amountPaid').focus();
   document.getElementById('amountPaid').select();
@@ -217,8 +242,9 @@ document.getElementById('loyaltyInput').addEventListener('input', () => {
   const val = document.getElementById('loyaltyInput').value.trim();
   const statusEl = document.getElementById('loyaltyStatus');
   loyaltyMember = null;
+  redeemedAmount = 0;
   clearTimeout(loyaltyTimer);
-  if (!val) { statusEl.textContent = ''; return; }
+  if (!val) { statusEl.textContent = ''; updateRedeemSection(); refreshPaymentSummary(); return; }
   statusEl.innerHTML = '<span style="color:#9ca3af">Looking up…</span>';
   loyaltyTimer = setTimeout(async () => {
     try {
@@ -226,8 +252,10 @@ document.getElementById('loyaltyInput').addEventListener('input', () => {
       if (result.match_type === 'contact') {
         loyaltyMember = result;
         statusEl.innerHTML = `<span style="color:#059669;font-weight:600">✓ ${result.full_name} &nbsp;·&nbsp; ${result.points.toLocaleString()} pts</span>`;
+        updateRedeemSection();
       } else {
-        // Name match — show suggestions, let cashier pick
+        loyaltyMember = null;
+        updateRedeemSection();
         const opts = result.results.map(m =>
           `<span style="cursor:pointer;color:#4f46e5;font-weight:600;text-decoration:underline" data-id="${m.id}" data-name="${m.full_name}" data-contact="${m.contact_number}" data-points="${m.points}">${m.full_name} (${m.contact_number})</span>`
         ).join('&nbsp; ');
@@ -237,13 +265,55 @@ document.getElementById('loyaltyInput').addEventListener('input', () => {
             loyaltyMember = { id: +el.dataset.id, full_name: el.dataset.name, contact_number: el.dataset.contact, points: +el.dataset.points };
             document.getElementById('loyaltyInput').value = loyaltyMember.contact_number;
             statusEl.innerHTML = `<span style="color:#059669;font-weight:600">✓ ${loyaltyMember.full_name} &nbsp;·&nbsp; ${loyaltyMember.points.toLocaleString()} pts</span>`;
+            updateRedeemSection();
           });
         });
       }
     } catch {
+      loyaltyMember = null;
+      updateRedeemSection();
       statusEl.innerHTML = '<span style="color:#dc2626">✕ Contact number not found in loyalty program</span>';
     }
   }, 400);
+});
+
+// ── Redeem Points ──────────────────────────────────────────────────────────────
+document.getElementById('redeemBtn').addEventListener('click', () => {
+  document.getElementById('redeemAmtInput').value = '';
+  document.getElementById('redeemError').textContent = '';
+  showRedeemState('input');
+  document.getElementById('redeemAmtInput').focus();
+});
+
+document.getElementById('cancelRedeemBtn').addEventListener('click', () => {
+  showRedeemState('idle');
+});
+
+document.getElementById('applyRedeemBtn').addEventListener('click', () => {
+  const amt = parseInt(document.getElementById('redeemAmtInput').value) || 0;
+  const errEl = document.getElementById('redeemError');
+  errEl.textContent = '';
+  if (amt <= 0) { errEl.textContent = 'Please enter an amount greater than 0'; return; }
+  if (amt > loyaltyMember.points) {
+    errEl.textContent = `Insufficient points — member has ${loyaltyMember.points.toLocaleString()} pts (₱${loyaltyMember.points.toLocaleString()})`;
+    return;
+  }
+  const orderTotal = Math.max(0, getSubtotal() - getDiscount());
+  if (amt > orderTotal) {
+    errEl.textContent = `Cannot redeem more than the order total (₱${orderTotal.toFixed(2)})`;
+    return;
+  }
+  redeemedAmount = amt;
+  document.getElementById('redeemAppliedAmt').textContent = fmt(redeemedAmount);
+  document.getElementById('redeemAppliedPts').textContent = redeemedAmount.toLocaleString();
+  showRedeemState('applied');
+  refreshPaymentSummary();
+});
+
+document.getElementById('removeRedeemBtn').addEventListener('click', () => {
+  redeemedAmount = 0;
+  showRedeemState('idle');
+  refreshPaymentSummary();
 });
 
 function closePayment() {
@@ -291,7 +361,9 @@ document.getElementById('processPayment').addEventListener('click', async () => 
       discount: getDiscount(),
       payment_method: paymentMethod,
       amount_paid: paymentMethod === 'cash' ? paid : total,
-      notes: document.getElementById('orderNotes').value.trim() || null
+      notes: document.getElementById('orderNotes').value.trim() || null,
+      loyalty_member_id: loyaltyMember?.id || null,
+      points_redeemed: redeemedAmount || 0
     });
     closePayment();
     showReceipt(result, paid);
@@ -329,6 +401,7 @@ function showReceipt(order, amountPaid) {
       <hr class="receipt-divider" />
       <div class="receipt-item"><span class="receipt-item-name">Subtotal</span><span class="receipt-item-total" style="width:auto">${fmt(order.subtotal)}</span></div>
       ${order.discount > 0 ? `<div class="receipt-item"><span class="receipt-item-name">Discount</span><span class="receipt-item-total" style="width:auto">-${fmt(order.discount)}</span></div>` : ''}
+      ${order.points_redeemed > 0 ? `<div class="receipt-item" style="color:#7c3aed"><span class="receipt-item-name">⭐ Points Redeemed (${order.points_redeemed.toLocaleString()} pts)</span><span class="receipt-item-total" style="width:auto;color:#7c3aed">-${fmt(order.points_redeemed)}</span></div>` : ''}
       <div class="receipt-item" style="font-weight:700;font-size:16px;padding-top:6px"><span class="receipt-item-name">TOTAL</span><span class="receipt-item-total" style="width:auto">${fmt(order.total)}</span></div>
       ${order.payment_method === 'cash' ? `
         <div class="receipt-item" style="margin-top:4px"><span class="receipt-item-name">Cash</span><span class="receipt-item-total" style="width:auto">${fmt(amountPaid)}</span></div>
@@ -349,6 +422,7 @@ function resetAfterSale() {
   document.getElementById('loyaltyInput').value = '';
   document.getElementById('loyaltyStatus').textContent = '';
   loyaltyMember = null;
+  redeemedAmount = 0;
   renderCart();
 }
 document.getElementById('closeReceipt').addEventListener('click', resetAfterSale);

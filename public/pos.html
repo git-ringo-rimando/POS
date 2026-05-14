@@ -119,6 +119,31 @@
         <input class="form-control" id="loyaltyInput" type="tel" placeholder="Enter contact number (optional)" autocomplete="off" />
         <div id="loyaltyStatus" style="margin-top:6px;font-size:13px;min-height:18px"></div>
       </div>
+      <!-- Redeem Points -->
+      <div id="redeemSection" style="display:none;margin-top:2px;padding:10px 14px;background:#f5f3ff;border-radius:10px;border:1.5px solid #c4b5fd">
+        <!-- idle: show button -->
+        <div id="redeemIdle" style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+          <span style="font-size:13px;color:#6d28d9;font-weight:600" id="redeemPtsDisplay">0 pts available</span>
+          <button id="redeemBtn" style="background:#7c3aed;color:#fff;border:none;border-radius:6px;padding:5px 14px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">⭐ Redeem Points</button>
+        </div>
+        <!-- input: enter amount -->
+        <div id="redeemInputArea" style="display:none">
+          <div style="font-size:12px;font-weight:700;color:#7c3aed;margin-bottom:6px">Enter amount to redeem (₱)</div>
+          <div style="display:flex;gap:6px;align-items:flex-start">
+            <div style="flex:1">
+              <input class="form-control" id="redeemAmtInput" type="number" min="1" step="1" placeholder="0" style="font-size:18px;font-weight:700;text-align:right" />
+              <div id="redeemError" style="color:#dc2626;font-size:12px;margin-top:4px;min-height:16px"></div>
+            </div>
+            <button id="applyRedeemBtn" style="background:#7c3aed;color:#fff;border:none;border-radius:6px;padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">Apply</button>
+            <button id="cancelRedeemBtn" style="background:#f3f4f6;color:#374151;border:1px solid #e5e7eb;border-radius:6px;padding:8px 12px;font-size:13px;cursor:pointer">Cancel</button>
+          </div>
+        </div>
+        <!-- applied: show result -->
+        <div id="redeemApplied" style="display:none;align-items:center;justify-content:space-between;gap:8px">
+          <span style="font-size:13px;color:#059669;font-weight:700">✓ Redeeming <span id="redeemAppliedAmt"></span> (<span id="redeemAppliedPts"></span> pts)</span>
+          <button id="removeRedeemBtn" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:12px;font-weight:600;padding:0">✕ Remove</button>
+        </div>
+      </div>
       <div class="form-group">
         <label class="form-label">Notes (optional)</label>
         <input class="form-control" id="orderNotes" type="text" placeholder="Customer name, table number, etc." />

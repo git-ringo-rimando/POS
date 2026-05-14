@@ -90,6 +90,26 @@
     .history-new { color: #059669; font-weight: 600; font-size: 12px; }
     .btn-icon { background: none; border: 1px solid #e5e7eb; border-radius: 6px; padding: 4px 8px; cursor: pointer; font-size: 13px; transition: background .15s; }
     .btn-icon:hover { background: #f3f4f6; }
+    /* referral tree */
+    .rtree-root { display:flex; flex-direction:column; gap:0; padding:4px 0; }
+    .rtree-root-node {
+      display:inline-flex; align-items:center; gap:10px;
+      background:linear-gradient(135deg,#4f46e5,#7c3aed); color:#fff;
+      border-radius:10px; padding:10px 16px; font-weight:700; font-size:14px; margin-bottom:4px;
+    }
+    .rtree-avatar-root { width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px; }
+    .rtree-l1 { margin-left:20px;border-left:2px solid #e5e7eb;display:flex;flex-direction:column; }
+    .rtree-l1-row { display:flex;flex-direction:column; }
+    .rtree-l1-conn { display:flex;align-items:center;padding:6px 0; }
+    .rtree-l1-conn::before { content:'';width:20px;height:2px;background:#e5e7eb;flex-shrink:0; }
+    .rtree-l1-node { display:inline-flex;align-items:center;gap:8px;background:#f5f3ff;border:1.5px solid #c4b5fd;border-radius:8px;padding:8px 12px;font-size:13px; }
+    .rtree-av1 { width:24px;height:24px;border-radius:50%;background:#8b5cf6;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;flex-shrink:0; }
+    .rtree-l2 { margin-left:40px;border-left:2px solid #f3f4f6;display:flex;flex-direction:column; }
+    .rtree-l2-conn { display:flex;align-items:center;padding:4px 0; }
+    .rtree-l2-conn::before { content:'';width:20px;height:2px;background:#f3f4f6;flex-shrink:0; }
+    .rtree-l2-node { display:inline-flex;align-items:center;gap:7px;background:#fafafa;border:1px solid #e5e7eb;border-radius:7px;padding:6px 10px;font-size:12px; }
+    .rtree-av2 { width:20px;height:20px;border-radius:50%;background:#d1d5db;color:#374151;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:9px;flex-shrink:0; }
+    .pts-sm { font-size:11px;background:#ede9fe;color:#6d28d9;padding:1px 7px;border-radius:10px;font-weight:700; }
     @media (max-width: 600px) {
       .air-login-card { padding: 28px 20px; }
       .air-content { padding: 16px; }
@@ -178,6 +198,7 @@
                 <th>#</th>
                 <th>Member</th>
                 <th>Contact Number</th>
+                <th>Referral Code</th>
                 <th>Email</th>
                 <th style="text-align:center">Points</th>
                 <th>Member Since</th>
@@ -185,7 +206,7 @@
               </tr>
             </thead>
             <tbody id="memberBody">
-              <tr><td colspan="7" style="text-align:center;padding:48px;color:#9ca3af">Loading…</td></tr>
+              <tr><td colspan="8" style="text-align:center;padding:48px;color:#9ca3af">Loading…</td></tr>
             </tbody>
           </table>
         </div>
@@ -249,6 +270,58 @@
     <div class="modal-footer">
       <button class="btn btn-secondary" id="cancelEditModal">Cancel</button>
       <button class="btn btn-primary" id="saveEditBtn">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- RESET PASSWORD MODAL -->
+<div class="modal-overlay hidden" id="resetPwModal">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <h3 class="modal-title" id="resetPwTitle">🔑 Reset Password</h3>
+      <button class="btn-close" id="closeResetPwModal">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="resetPwMemberId" />
+      <p style="font-size:13px;color:#6b7280;margin:0 0 16px" id="resetPwDesc"></p>
+      <div class="form-group">
+        <label class="form-label">New Password *</label>
+        <input class="form-control" id="adminNewPw" type="password" placeholder="New password" autocomplete="new-password" />
+        <div style="height:4px;border-radius:2px;background:#e5e7eb;margin-top:6px;overflow:hidden"><div id="adminPwFill" style="height:100%;border-radius:2px;transition:width .25s,background .25s;width:0"></div></div>
+        <div style="display:flex;flex-direction:column;gap:2px;margin-top:6px" id="adminPwReqs">
+          <span style="font-size:11px;color:#9ca3af" id="apw-len">At least 8 characters</span>
+          <span style="font-size:11px;color:#9ca3af" id="apw-upper">1 uppercase letter</span>
+          <span style="font-size:11px;color:#9ca3af" id="apw-lower">1 lowercase letter</span>
+          <span style="font-size:11px;color:#9ca3af" id="apw-num">1 number</span>
+          <span style="font-size:11px;color:#9ca3af" id="apw-special">1 special character</span>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Confirm Password *</label>
+        <input class="form-control" id="adminConfirmPw" type="password" placeholder="Repeat new password" autocomplete="new-password" />
+        <div id="adminMatchHint" style="font-size:12px;margin-top:4px"></div>
+      </div>
+      <div id="resetPwError" style="color:#dc2626;font-size:13px;margin-top:4px;display:none"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" id="cancelResetPwModal">Cancel</button>
+      <button class="btn btn-danger" id="saveResetPwBtn">Reset Password</button>
+    </div>
+  </div>
+</div>
+
+<!-- REFERRAL TREE MODAL -->
+<div class="modal-overlay hidden" id="referralModal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <h3 class="modal-title" id="referralModalTitle">Referral Network</h3>
+      <button class="btn-close" id="closeReferralModal">✕</button>
+    </div>
+    <div class="modal-body" id="referralContent" style="min-height:120px">
+      <div style="text-align:center;padding:40px;color:#9ca3af">Loading…</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" id="closeReferralBtn">Close</button>
     </div>
   </div>
 </div>
@@ -325,7 +398,7 @@
   function renderTable(members) {
     const tbody = document.getElementById('memberBody');
     if (!members.length) {
-      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:48px;color:#9ca3af">No members found</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:48px;color:#9ca3af">No members found</td></tr>';
       return;
     }
     tbody.innerHTML = members.map((m, i) => `
@@ -341,12 +414,15 @@
           </div>
         </td>
         <td>${m.contact_number}</td>
+        <td><span style="font-family:monospace;font-weight:700;font-size:13px;background:#f5f3ff;color:#6d28d9;padding:2px 8px;border-radius:5px;letter-spacing:1px">${m.referral_code || '—'}</span></td>
         <td style="color:#6b7280">${m.email}</td>
         <td style="text-align:center"><span class="pts-badge">${(m.points||0).toLocaleString()} pts</span></td>
         <td style="color:#6b7280;font-size:13px">${fmtDate(m.created_at)}</td>
         <td style="text-align:center;white-space:nowrap">
           <button class="btn-icon" title="Edit" onclick="openEdit(${m.id})">✏️</button>
+          <button class="btn-icon" title="Reset Password" onclick="openResetPw(${m.id}, '${m.full_name.replace(/'/g,"\\'")}')">🔑</button>
           <button class="btn-icon" title="Audit History" onclick="openHistory(${m.id}, '${m.full_name.replace(/'/g,"\\'")}')">📋</button>
+          <button class="btn-icon" title="Referral Tree" onclick="openReferralTree(${m.id}, '${m.full_name.replace(/'/g,"\\'")}')">🌿</button>
         </td>
       </tr>`).join('');
   }
@@ -495,6 +571,129 @@
       btn.disabled = false; btn.textContent = 'Save Points Table';
     }
   });
+
+  // ── Admin Reset Password ──────────────────────────────────────────────────
+  function checkAdminPw(pw) {
+    const checks = { len: pw.length>=8, upper:/[A-Z]/.test(pw), lower:/[a-z]/.test(pw), num:/[0-9]/.test(pw), special:/[^A-Za-z0-9]/.test(pw) };
+    const met = Object.values(checks).filter(Boolean).length;
+    const colors = ['#ef4444','#f97316','#eab308','#84cc16','#22c55e'];
+    const fill = document.getElementById('adminPwFill');
+    fill.style.width = (met*20)+'%'; fill.style.background = colors[met-1]||'#e5e7eb';
+    Object.entries(checks).forEach(([k,v]) => {
+      const el = document.getElementById('apw-'+k);
+      if (el) { el.style.color = v ? '#059669' : '#9ca3af'; el.textContent = (v?'✓ ':'✗ ') + el.textContent.replace(/^[✓✗] /,''); }
+    });
+    return met === 5;
+  }
+
+  document.getElementById('adminNewPw').addEventListener('input', e => {
+    checkAdminPw(e.target.value);
+    const c = document.getElementById('adminConfirmPw').value;
+    if (c) updateAdminMatch(e.target.value, c);
+  });
+  document.getElementById('adminConfirmPw').addEventListener('input', e => updateAdminMatch(document.getElementById('adminNewPw').value, e.target.value));
+
+  function updateAdminMatch(pw, c) {
+    const el = document.getElementById('adminMatchHint');
+    if (!c) { el.textContent=''; return; }
+    el.textContent = pw===c ? '✓ Passwords match' : '✗ Passwords do not match';
+    el.style.color  = pw===c ? '#059669' : '#dc2626';
+  }
+
+  function openResetPw(id, name) {
+    document.getElementById('resetPwMemberId').value = id;
+    document.getElementById('resetPwTitle').textContent = `🔑 Reset Password — ${name}`;
+    document.getElementById('resetPwDesc').textContent  = `Set a new password for ${name}. This will be logged in the audit history.`;
+    document.getElementById('adminNewPw').value = '';
+    document.getElementById('adminConfirmPw').value = '';
+    document.getElementById('adminPwFill').style.width = '0';
+    document.getElementById('adminMatchHint').textContent = '';
+    document.getElementById('resetPwError').style.display = 'none';
+    // Reset req labels
+    ['len','upper','lower','num','special'].forEach(k => { const el=document.getElementById('apw-'+k); if(el){el.style.color='#9ca3af';el.textContent=el.textContent.replace(/^[✓✗] /,'');} });
+    document.getElementById('resetPwModal').classList.remove('hidden');
+  }
+
+  document.getElementById('closeResetPwModal').addEventListener('click', () => document.getElementById('resetPwModal').classList.add('hidden'));
+  document.getElementById('cancelResetPwModal').addEventListener('click', () => document.getElementById('resetPwModal').classList.add('hidden'));
+
+  document.getElementById('saveResetPwBtn').addEventListener('click', async () => {
+    const id  = parseInt(document.getElementById('resetPwMemberId').value);
+    const pw  = document.getElementById('adminNewPw').value;
+    const con = document.getElementById('adminConfirmPw').value;
+    const errEl = document.getElementById('resetPwError');
+    const btn   = document.getElementById('saveResetPwBtn');
+    errEl.style.display = 'none';
+    if (pw !== con) { errEl.textContent='Passwords do not match'; errEl.style.display='block'; return; }
+    btn.disabled = true; btn.textContent = 'Resetting…';
+    try {
+      await authFetch(`/api/loyalty/members/${id}/reset-password`, { method:'PUT', body: JSON.stringify({ new_password: pw }) });
+      document.getElementById('resetPwModal').classList.add('hidden');
+      showToast('Password reset successfully', 'success');
+    } catch (e) {
+      errEl.textContent = e.message; errEl.style.display = 'block';
+    } finally { btn.disabled = false; btn.textContent = 'Reset Password'; }
+  });
+
+  // ── Referral Tree ─────────────────────────────────────────────────────────
+  document.getElementById('closeReferralModal').addEventListener('click', () => document.getElementById('referralModal').classList.add('hidden'));
+  document.getElementById('closeReferralBtn').addEventListener('click',   () => document.getElementById('referralModal').classList.add('hidden'));
+
+  async function openReferralTree(id, name) {
+    document.getElementById('referralModalTitle').textContent = `🌿 Referral Network — ${name}`;
+    document.getElementById('referralContent').innerHTML = '<div style="text-align:center;padding:40px;color:#9ca3af">Loading…</div>';
+    document.getElementById('referralModal').classList.remove('hidden');
+    try {
+      const tree = await authFetch(`/api/loyalty/members/${id}/referrals`);
+      const total = tree.reduce((s, n) => s + 1 + n.referrals.length, 0);
+
+      if (!tree.length) {
+        document.getElementById('referralContent').innerHTML = `<div style="text-align:center;padding:40px;color:#9ca3af">No referrals under <strong>${name}</strong> yet.</div>`;
+        return;
+      }
+
+      const l1Html = tree.map(n => {
+        const l2Html = n.referrals.map(c => `
+          <div class="rtree-l2-conn">
+            <div class="rtree-l2-node">
+              <div class="rtree-av2">${c.full_name[0].toUpperCase()}</div>
+              <span style="font-weight:600;color:#374151">${c.full_name}</span>
+              <span style="font-size:11px;color:#9ca3af">${c.contact_number}</span>
+              <span class="pts-sm">${(c.points||0).toLocaleString()} pts</span>
+            </div>
+          </div>`).join('');
+        return `
+          <div class="rtree-l1-row">
+            <div class="rtree-l1-conn">
+              <div class="rtree-l1-node">
+                <div class="rtree-av1">${n.full_name[0].toUpperCase()}</div>
+                <div>
+                  <span style="font-weight:600;color:#4c1d95">${n.full_name}</span>
+                  <span style="font-size:11px;color:#9ca3af;margin-left:6px">${n.contact_number}</span>
+                  ${n.referrals.length ? `<span class="pts-sm" style="margin-left:4px">${n.referrals.length} sub-referral${n.referrals.length>1?'s':''}</span>` : ''}
+                </div>
+                <span class="pts-sm">${(n.points||0).toLocaleString()} pts</span>
+              </div>
+            </div>
+            ${l2Html ? `<div class="rtree-l2">${l2Html}</div>` : ''}
+          </div>`;
+      }).join('');
+
+      document.getElementById('referralContent').innerHTML = `
+        <div style="padding:20px">
+          <p style="font-size:13px;color:#6b7280;margin:0 0 16px">${total} member${total>1?'s':''} in this network</p>
+          <div class="rtree-root">
+            <div class="rtree-root-node">
+              <div class="rtree-avatar-root">${name[0].toUpperCase()}</div>
+              ${name} <span style="opacity:.7;font-size:12px">(Root)</span>
+            </div>
+            <div class="rtree-l1">${l1Html}</div>
+          </div>
+        </div>`;
+    } catch (e) {
+      document.getElementById('referralContent').innerHTML = `<div style="text-align:center;padding:40px;color:#ef4444">${e.message}</div>`;
+    }
+  }
 
   // ── Bootstrap ─────────────────────────────────────────────────────────────
   loadAppSettings().then(applyBranding);

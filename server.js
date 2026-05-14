@@ -314,7 +314,7 @@ app.get('/api/orders/:id', auth, ah(async (req, res) => {
 }));
 
 app.post('/api/orders', auth, ah(async (req, res) => {
-  const { items, discount = 0, payment_method = 'cash', amount_paid, notes } = req.body;
+  const { items, discount = 0, payment_method = 'cash', amount_paid, notes, loyalty_member_id, points_redeemed = 0 } = req.body;
   if (!items?.length) return res.status(400).json({ error: 'Order must have at least one item' });
 
   const result = await sql.begin(async sql => {
@@ -329,11 +329,21 @@ app.post('/api/orders', auth, ah(async (req, res) => {
       resolved.push({ p, qty: item.quantity, lineTotal: p.selling_price * item.quantity });
     }
 
-    const discountAmt = parseFloat(discount) || 0;
-    const total       = Math.max(0, subtotal - discountAmt);
-    const paid        = parseFloat(amount_paid) || total;
-    const change      = Math.max(0, paid - total);
-    const orderNum    = `ORD-${Date.now()}`;
+    const discountAmt  = parseFloat(discount) || 0;
+    const redeemedPts  = parseInt(points_redeemed) || 0;
+
+    // Validate and deduct loyalty points before creating order
+    let loyaltyMember = null;
+    if (loyalty_member_id && redeemedPts > 0) {
+      [loyaltyMember] = await sql`SELECT id, full_name, points FROM loyalty_members WHERE id = ${loyalty_member_id}`;
+      if (!loyaltyMember) throw Object.assign(new Error('Loyalty member not found'), { status: 404 });
+      if (loyaltyMember.points < redeemedPts) throw Object.assign(new Error(`Insufficient points. Member has ${loyaltyMember.points} pts (₱${loyaltyMember.points.toLocaleString()})`), { status: 400 });
+    }
+
+    const total    = Math.max(0, subtotal - discountAmt - redeemedPts);
+    const paid     = parseFloat(amount_paid) || total;
+    const change   = Math.max(0, paid - total);
+    const orderNum = `ORD-${Date.now()}`;
 
     const [ord] = await sql`INSERT INTO orders (order_number, user_id, subtotal, discount, total, payment_method, amount_paid, change_amount, notes) VALUES (${orderNum}, ${req.user.id}, ${subtotal}, ${discountAmt}, ${total}, ${payment_method}, ${paid}, ${change}, ${notes || null}) RETURNING id`;
 
@@ -345,7 +355,16 @@ app.post('/api/orders', auth, ah(async (req, res) => {
       await applyCascadedLinks(sql, p.id, newStock, p.name, req.user.id);
     }
 
-    return { order_id: ord.id, order_number: orderNum, subtotal, discount: discountAmt, total, change, payment_method };
+    // Deduct loyalty points
+    if (loyaltyMember && redeemedPts > 0) {
+      const newPoints = loyaltyMember.points - redeemedPts;
+      await sql`UPDATE loyalty_members SET points = ${newPoints} WHERE id = ${loyaltyMember.id}`;
+      await sql`INSERT INTO loyalty_member_history (member_id, member_name, changed_by, field_changed, old_value, new_value)
+        VALUES (${loyaltyMember.id}, ${loyaltyMember.full_name}, ${req.user.full_name || req.user.username}, 'points',
+                ${String(loyaltyMember.points)}, ${newPoints + ' (−' + redeemedPts + ' pts redeemed on ' + orderNum + ')'})`;
+    }
+
+    return { order_id: ord.id, order_number: orderNum, subtotal, discount: discountAmt, points_redeemed: redeemedPts, total, change, payment_method };
   });
   res.json(result);
 }));
@@ -484,6 +503,20 @@ app.get('/api/reports/daily-summary', auth, ah(async (req, res) => {
 }));
 
 // ── Loyalty Program ────────────────────────────────────────────────────────────
+function validateReferralCode(code) {
+  if (!code || code.length !== 8)        return 'Referral code must be exactly 8 characters';
+  if (!/^[A-Za-z0-9]{8}$/.test(code))   return 'Referral code may only contain letters and numbers';
+  return null;
+}
+
+function validatePasswordComplexity(pw) {
+  if (!pw || pw.length < 8)       return 'Password must be at least 8 characters';
+  if (!/[A-Z]/.test(pw))          return 'Password must contain at least 1 uppercase letter';
+  if (!/[a-z]/.test(pw))          return 'Password must contain at least 1 lowercase letter';
+  if (!/[0-9]/.test(pw))          return 'Password must contain at least 1 number';
+  if (!/[^A-Za-z0-9]/.test(pw))   return 'Password must contain at least 1 special character';
+  return null;
+}
 const loyaltyAuth = (req, res, next) => {
   const h = req.headers.authorization;
   if (!h?.startsWith('Bearer ')) return res.status(401).json({ error: 'Unauthorized' });
@@ -505,23 +538,52 @@ app.get('/AIR-admin', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'AIR-admin.html'));
 });
 
+app.get('/api/loyalty/referral-check', ah(async (req, res) => {
+  const code = req.query.code?.trim().toUpperCase();
+  if (!code) return res.status(400).json({ error: 'Referral code required' });
+  const [m] = await sql`SELECT id, full_name FROM loyalty_members WHERE referral_code = ${code}`;
+  if (!m) return res.status(404).json({ error: 'Referral code not found' });
+  res.json({ id: m.id, full_name: m.full_name });
+}));
+
+app.get('/api/loyalty/check-code', ah(async (req, res) => {
+  const code = req.query.code?.trim().toUpperCase();
+  if (!code) return res.status(400).json({ error: 'Code required' });
+  const err = validateReferralCode(code);
+  if (err) return res.json({ available: false, error: err });
+  const [existing] = await sql`SELECT id FROM loyalty_members WHERE referral_code = ${code}`;
+  res.json({ available: !existing });
+}));
+
 app.post('/api/loyalty/register', ah(async (req, res) => {
-  const { full_name, contact_number, email, password } = req.body || {};
-  if (!full_name?.trim()) return res.status(400).json({ error: 'Full name is required' });
-  if (!contact_number?.trim()) return res.status(400).json({ error: 'Contact number is required' });
-  if (!email?.trim()) return res.status(400).json({ error: 'Email address is required' });
-  if (!password || password.length < 6) return res.status(400).json({ error: 'Password must be at least 6 characters' });
+  const { full_name, contact_number, email, password, my_code, referral_code } = req.body || {};
+  if (!full_name?.trim())     return res.status(400).json({ error: 'Full name is required' });
+  if (!contact_number?.trim())return res.status(400).json({ error: 'Contact number is required' });
+  if (!email?.trim())         return res.status(400).json({ error: 'Email address is required' });
+  const pwErr = validatePasswordComplexity(password);
+  if (pwErr) return res.status(400).json({ error: pwErr });
+  const myCode = my_code?.trim().toUpperCase();
+  if (!myCode) return res.status(400).json({ error: 'Referral code is required' });
+  const codeErr = validateReferralCode(myCode);
+  if (codeErr) return res.status(400).json({ error: codeErr });
+  const [codeExists] = await sql`SELECT id FROM loyalty_members WHERE referral_code = ${myCode}`;
+  if (codeExists) return res.status(409).json({ error: 'That referral code is already taken. Please choose another.' });
+  let referred_by_id = null;
+  if (referral_code?.trim()) {
+    const [referrer] = await sql`SELECT id FROM loyalty_members WHERE referral_code = ${referral_code.trim().toUpperCase()}`;
+    if (referrer) referred_by_id = referrer.id;
+  }
   try {
     const [m] = await sql`
-      INSERT INTO loyalty_members (full_name, contact_number, email, password)
-      VALUES (${full_name.trim()}, ${contact_number.trim()}, ${email.trim().toLowerCase()}, ${bcrypt.hashSync(password, 10)})
-      RETURNING id, full_name, contact_number, email, points, created_at
+      INSERT INTO loyalty_members (full_name, contact_number, email, password, referral_code, referred_by_id)
+      VALUES (${full_name.trim()}, ${contact_number.trim()}, ${email.trim().toLowerCase()}, ${bcrypt.hashSync(password, 10)}, ${myCode}, ${referred_by_id})
+      RETURNING id, full_name, contact_number, email, points, referral_code, referred_by_id, created_at
     `;
     const payload = { loyalty_member_id: m.id, contact_number: m.contact_number, full_name: m.full_name };
-    res.json({ token: jwt.sign(payload, SECRET, { expiresIn: '24h' }), member: { id: m.id, full_name: m.full_name, contact_number: m.contact_number, email: m.email, points: m.points, created_at: m.created_at } });
+    res.json({ token: jwt.sign(payload, SECRET, { expiresIn: '24h' }), member: { id: m.id, full_name: m.full_name, contact_number: m.contact_number, email: m.email, points: m.points, referral_code: m.referral_code, referred_by_id: m.referred_by_id, created_at: m.created_at } });
   } catch (e) {
     if (e.code === '23505') {
-      const msg = e.detail?.includes('contact_number') ? 'Contact number already registered' : 'Email already registered';
+      const msg = e.detail?.includes('contact_number') ? 'Contact number already registered' : e.detail?.includes('email') ? 'Email already registered' : 'Referral code already taken';
       return res.status(409).json({ error: msg });
     }
     throw e;
@@ -536,17 +598,80 @@ app.post('/api/loyalty/login', ah(async (req, res) => {
     return res.status(401).json({ error: 'Invalid contact number or password' });
   }
   const payload = { loyalty_member_id: m.id, contact_number: m.contact_number, full_name: m.full_name };
-  res.json({ token: jwt.sign(payload, SECRET, { expiresIn: '24h' }), member: { id: m.id, full_name: m.full_name, contact_number: m.contact_number, email: m.email, points: m.points, created_at: m.created_at } });
+  res.json({ token: jwt.sign(payload, SECRET, { expiresIn: '24h' }), member: { id: m.id, full_name: m.full_name, contact_number: m.contact_number, email: m.email, points: m.points, referral_code: m.referral_code, created_at: m.created_at } });
 }));
 
 app.get('/api/loyalty/me', loyaltyAuth, ah(async (req, res) => {
-  const [m] = await sql`SELECT id, full_name, contact_number, email, points, created_at FROM loyalty_members WHERE id = ${req.member.loyalty_member_id}`;
+  const [m] = await sql`SELECT id, full_name, contact_number, email, points, referral_code, created_at FROM loyalty_members WHERE id = ${req.member.loyalty_member_id}`;
   if (!m) return res.status(404).json({ error: 'Member not found' });
   res.json(m);
 }));
 
+app.post('/api/loyalty/verify-identity', ah(async (req, res) => {
+  const { full_name, contact_number, email } = req.body || {};
+  if (!full_name?.trim() || !contact_number?.trim() || !email?.trim())
+    return res.status(400).json({ error: 'Full name, contact number, and email are all required' });
+  const [m] = await sql`
+    SELECT id, full_name FROM loyalty_members
+    WHERE LOWER(full_name) = LOWER(${full_name.trim()})
+      AND contact_number   = ${contact_number.trim()}
+      AND LOWER(email)     = LOWER(${email.trim()})`;
+  if (!m) return res.status(400).json({ error: 'Details do not match any account. Please check your name, contact number, and email.' });
+  const resetToken = jwt.sign({ reset_member_id: m.id, purpose: 'password_reset' }, SECRET, { expiresIn: '15m' });
+  res.json({ reset_token: resetToken, full_name: m.full_name });
+}));
+
+app.post('/api/loyalty/reset-password', ah(async (req, res) => {
+  const { reset_token, new_password } = req.body || {};
+  if (!reset_token) return res.status(400).json({ error: 'Reset token required' });
+  let decoded;
+  try {
+    decoded = jwt.verify(reset_token, SECRET);
+    if (decoded.purpose !== 'password_reset') throw new Error('invalid');
+  } catch {
+    return res.status(400).json({ error: 'Reset link is invalid or has expired. Please start again.' });
+  }
+  const pwErr = validatePasswordComplexity(new_password);
+  if (pwErr) return res.status(400).json({ error: pwErr });
+  const id = decoded.reset_member_id;
+  const [m] = await sql`SELECT id, full_name FROM loyalty_members WHERE id = ${id}`;
+  if (!m) return res.status(404).json({ error: 'Member not found' });
+  await sql`UPDATE loyalty_members SET password = ${bcrypt.hashSync(new_password, 10)} WHERE id = ${id}`;
+  await sql`INSERT INTO loyalty_member_history (member_id, member_name, changed_by, field_changed, old_value, new_value) VALUES (${id}, ${m.full_name}, ${'Self (password reset)'}, ${'password'}, ${'[hidden]'}, ${'[changed via forgot password]'})`;
+  res.json({ success: true });
+}));
+
+app.put('/api/loyalty/members/:id/reset-password', auth, adminOnly, ah(async (req, res) => {
+  const id = parseInt(req.params.id);
+  const { new_password } = req.body || {};
+  const pwErr = validatePasswordComplexity(new_password);
+  if (pwErr) return res.status(400).json({ error: pwErr });
+  const [m] = await sql`SELECT id, full_name FROM loyalty_members WHERE id = ${id}`;
+  if (!m) return res.status(404).json({ error: 'Member not found' });
+  await sql`UPDATE loyalty_members SET password = ${bcrypt.hashSync(new_password, 10)} WHERE id = ${id}`;
+  await sql`INSERT INTO loyalty_member_history (member_id, member_name, changed_by, field_changed, old_value, new_value) VALUES (${id}, ${m.full_name}, ${req.user.full_name || req.user.username}, ${'password'}, ${'[hidden]'}, ${'[admin hard reset]'})`;
+  res.json({ success: true });
+}));
+
+// Build 2-level referral tree for a given member id
+async function getReferralTree(rootId) {
+  const direct = await sql`SELECT id, full_name, contact_number, points, created_at FROM loyalty_members WHERE referred_by_id = ${rootId} ORDER BY created_at ASC`;
+  return Promise.all(direct.map(async m => {
+    const children = await sql`SELECT id, full_name, contact_number, points, created_at FROM loyalty_members WHERE referred_by_id = ${m.id} ORDER BY created_at ASC`;
+    return { ...m, referrals: children };
+  }));
+}
+
+app.get('/api/loyalty/me/referrals', loyaltyAuth, ah(async (req, res) => {
+  res.json(await getReferralTree(req.member.loyalty_member_id));
+}));
+
+app.get('/api/loyalty/members/:id/referrals', auth, adminOnly, ah(async (req, res) => {
+  res.json(await getReferralTree(parseInt(req.params.id)));
+}));
+
 app.get('/api/loyalty/members', auth, adminOnly, ah(async (req, res) => {
-  res.json(await sql`SELECT id, full_name, contact_number, email, points, created_at FROM loyalty_members ORDER BY created_at DESC`);
+  res.json(await sql`SELECT id, full_name, contact_number, email, points, referral_code, created_at FROM loyalty_members ORDER BY created_at DESC`);
 }));
 
 app.get('/api/loyalty/lookup', auth, ah(async (req, res) => {

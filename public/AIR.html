@@ -6,59 +6,163 @@
   <title>Loyalty Rewards</title>
   <link rel="stylesheet" href="/css/style.css" />
   <style>
+    /* ── shared ─────────────────────────────────────────────────────── */
     .loyalty-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      background: linear-gradient(135deg, #4f46e5, #7c3aed);
-      color: #fff;
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: .5px;
-      text-transform: uppercase;
-      padding: 4px 12px;
-      border-radius: 20px;
-      margin-bottom: 4px;
+      display: inline-flex; align-items: center; gap: 6px;
+      background: linear-gradient(135deg,#4f46e5,#7c3aed); color:#fff;
+      font-size:11px; font-weight:700; letter-spacing:.5px; text-transform:uppercase;
+      padding:4px 12px; border-radius:20px; margin-bottom:4px;
     }
-    .points-card {
-      background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
-      border-radius: 16px;
-      color: #fff;
-      padding: 28px 24px;
-      text-align: center;
-      margin: 20px 0 16px;
-    }
-    .points-label { font-size: 12px; font-weight: 600; opacity: .8; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px; }
-    .points-value { font-size: 52px; font-weight: 800; line-height: 1; }
-    .points-unit  { font-size: 14px; font-weight: 600; opacity: .75; margin-top: 4px; }
-    .member-info  { display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: #6b7280; margin-bottom: 20px; }
-    .member-info span { display: flex; gap: 8px; }
-    .member-info strong { color: #374151; min-width: 100px; }
     .divider-text {
-      display: flex; align-items: center; gap: 10px;
-      font-size: 12px; color: #9ca3af; margin: 16px 0;
+      display:flex; align-items:center; gap:10px;
+      font-size:12px; color:#9ca3af; margin:16px 0;
     }
-    .divider-text::before, .divider-text::after {
-      content: ''; flex: 1; height: 1px; background: #e5e7eb;
-    }
+    .divider-text::before,.divider-text::after { content:''; flex:1; height:1px; background:#e5e7eb; }
     .link-btn {
-      color: #4f46e5; text-decoration: none; font-weight: 600;
-      background: none; border: none; cursor: pointer; font-size: 14px; padding: 0;
+      color:#4f46e5; text-decoration:none; font-weight:600;
+      background:none; border:none; cursor:pointer; font-size:14px; padding:0;
     }
-    .link-btn:hover { text-decoration: underline; }
+    .link-btn:hover { text-decoration:underline; }
     .success-box {
-      background: #f0fdf4; border: 1px solid #bbf7d0;
-      border-radius: 8px; padding: 12px 16px;
-      color: #15803d; font-size: 13px; margin-bottom: 16px;
-      display: none;
+      background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px;
+      padding:12px 16px; color:#15803d; font-size:13px; margin-bottom:16px; display:none;
     }
-    .login-card { max-width: 400px; }
+    .login-card { max-width:420px; }
+    .ref-status { margin-top:6px; font-size:13px; min-height:18px; }
+
+    /* password strength */
+    .pw-strength-bar {
+      height:4px; border-radius:2px; background:#e5e7eb; margin-top:8px; overflow:hidden;
+    }
+    .pw-strength-fill {
+      height:100%; border-radius:2px; transition:width .25s,background .25s;
+      width:0;
+    }
+    .pw-reqs { display:flex; flex-direction:column; gap:3px; margin-top:8px; }
+    .pw-req  { font-size:11px; display:flex; align-items:center; gap:5px; color:#9ca3af; }
+    .pw-req.met { color:#059669; }
+    .pw-req.met::before { content:'✓'; font-weight:700; }
+    .pw-req:not(.met)::before { content:'✗'; color:#d1d5db; }
+
+    /* ── dashboard page ─────────────────────────────────────────────── */
+    .dash-page { min-height:100vh; background:#f9fafb; }
+    .dash-topbar {
+      background:#fff; border-bottom:1px solid #e5e7eb;
+      padding:12px 24px; display:flex; align-items:center;
+      justify-content:space-between; gap:12px; position:sticky; top:0; z-index:100;
+    }
+    .dash-brand { display:flex; align-items:center; gap:10px; }
+    .dash-logo-box {
+      width:34px; height:34px; border-radius:8px;
+      background:linear-gradient(135deg,#4f46e5,#7c3aed); color:#fff;
+      display:flex; align-items:center; justify-content:center; font-size:17px; overflow:hidden;
+    }
+    .dash-brand-name { font-size:14px; font-weight:700; color:#111827; }
+    .dash-content { max-width:720px; margin:0 auto; padding:28px 20px; display:flex; flex-direction:column; gap:20px; }
+
+    .points-card {
+      background:linear-gradient(135deg,#4f46e5,#7c3aed); border-radius:16px;
+      color:#fff; padding:28px 24px; text-align:center;
+    }
+    .points-label { font-size:11px; font-weight:700; opacity:.8; letter-spacing:1px; text-transform:uppercase; margin-bottom:8px; }
+    .points-value { font-size:56px; font-weight:800; line-height:1; }
+    .points-unit  { font-size:13px; font-weight:600; opacity:.75; margin-top:4px; }
+
+    .info-card {
+      background:#fff; border-radius:12px; border:1px solid #e5e7eb; padding:20px 24px;
+    }
+    .info-card h3 { font-size:14px; font-weight:700; color:#111827; margin:0 0 14px; }
+    .info-row { display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid #f9fafb; font-size:13px; }
+    .info-row:last-child { border-bottom:none; }
+    .info-row .lbl { color:#6b7280; }
+    .info-row .val { color:#111827; font-weight:600; }
+
+    /* referral code box */
+    .ref-code-box {
+      background:#f5f3ff; border:1.5px dashed #8b5cf6; border-radius:10px;
+      padding:14px 18px; display:flex; align-items:center; justify-content:space-between; gap:12px;
+    }
+    .ref-code-label { font-size:11px; font-weight:700; color:#7c3aed; text-transform:uppercase; letter-spacing:.5px; margin-bottom:2px; }
+    .ref-code-value { font-size:20px; font-weight:800; color:#4f46e5; letter-spacing:1px; }
+    .copy-btn {
+      background:#ede9fe; color:#6d28d9; border:none; border-radius:7px;
+      padding:7px 14px; font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap;
+    }
+    .copy-btn:hover { background:#ddd6fe; }
+
+    /* ── referral tree ───────────────────────────────────────────────── */
+    .tree-card { background:#fff; border-radius:12px; border:1px solid #e5e7eb; overflow:hidden; }
+    .tree-card-header { padding:16px 20px; border-bottom:1px solid #f3f4f6; display:flex; align-items:center; justify-content:space-between; }
+    .tree-card-title  { font-size:14px; font-weight:700; color:#111827; }
+    .tree-empty       { text-align:center; padding:36px 20px; color:#9ca3af; font-size:13px; }
+    .tree-wrap        { padding:20px; }
+
+    .tree-root { display:flex; flex-direction:column; gap:0; }
+    .tree-me {
+      display:inline-flex; align-items:center; gap:10px;
+      background:linear-gradient(135deg,#4f46e5,#7c3aed); color:#fff;
+      border-radius:10px; padding:10px 16px; font-weight:700; font-size:14px;
+      margin-bottom:4px; align-self:flex-start;
+    }
+    .tree-me-avatar {
+      width:28px; height:28px; border-radius:50%; background:rgba(255,255,255,.25);
+      display:flex; align-items:center; justify-content:center; font-weight:800; font-size:13px;
+    }
+
+    .tree-level1 { margin-left:20px; border-left:2px solid #e5e7eb; padding-left:0; display:flex; flex-direction:column; gap:0; }
+    .tree-l1-item { display:flex; flex-direction:column; position:relative; }
+    .tree-l1-connector {
+      display:flex; align-items:center; padding:6px 0 6px 0;
+    }
+    .tree-l1-connector::before {
+      content:''; width:20px; height:2px; background:#e5e7eb; flex-shrink:0;
+    }
+    .tree-l1-node {
+      display:inline-flex; align-items:center; gap:8px;
+      background:#f5f3ff; border:1.5px solid #c4b5fd; border-radius:8px;
+      padding:8px 12px; font-size:13px;
+    }
+    .tree-l1-avatar {
+      width:24px; height:24px; border-radius:50%; background:#8b5cf6; color:#fff;
+      display:flex; align-items:center; justify-content:center; font-weight:700; font-size:11px; flex-shrink:0;
+    }
+    .tree-l1-name  { font-weight:600; color:#4c1d95; }
+    .tree-l1-pts   { font-size:11px; color:#7c3aed; background:#ede9fe; padding:1px 7px; border-radius:10px; font-weight:700; }
+
+    .tree-level2 { margin-left:40px; border-left:2px solid #f3f4f6; display:flex; flex-direction:column; gap:0; }
+    .tree-l2-connector {
+      display:flex; align-items:center; padding:4px 0;
+    }
+    .tree-l2-connector::before {
+      content:''; width:20px; height:2px; background:#f3f4f6; flex-shrink:0;
+    }
+    .tree-l2-node {
+      display:inline-flex; align-items:center; gap:7px;
+      background:#fafafa; border:1px solid #e5e7eb; border-radius:7px;
+      padding:6px 10px; font-size:12px;
+    }
+    .tree-l2-avatar {
+      width:20px; height:20px; border-radius:50%; background:#d1d5db; color:#374151;
+      display:flex; align-items:center; justify-content:center; font-weight:700; font-size:9px; flex-shrink:0;
+    }
+    .tree-l2-name { font-weight:600; color:#374151; }
+    .tree-l2-pts  { font-size:10px; color:#6b7280; background:#f3f4f6; padding:1px 6px; border-radius:8px; font-weight:600; }
+
+    .tree-count-badge {
+      font-size:11px; color:#7c3aed; font-weight:700;
+      background:#ede9fe; border-radius:10px; padding:1px 8px; margin-left:6px;
+    }
+
+    @media(max-width:600px) {
+      .dash-content { padding:16px 12px; }
+      .points-value { font-size:44px; }
+    }
   </style>
 </head>
 <body>
-<div class="login-page">
 
-  <!-- ── LOGIN VIEW ──────────────────────────────────────────────────────── -->
+<!-- ── LOGIN VIEW ───────────────────────────────────────────────────────── -->
+<div class="login-page" id="authPages">
   <div class="login-card" id="loginView">
     <div class="login-logo">
       <div class="logo-icon" id="loginLogo">🛒</div>
@@ -69,15 +173,16 @@
     <form class="login-form" id="loginForm" autocomplete="on">
       <div class="form-group">
         <label class="form-label" for="loginContact">Contact Number</label>
-        <input class="form-control" id="loginContact" name="username" type="tel"
-               placeholder="e.g. 09123456789" autocomplete="username" required />
+        <input class="form-control" id="loginContact" name="username" type="tel" placeholder="e.g. 09123456789" autocomplete="username" required />
       </div>
       <div class="form-group">
         <label class="form-label" for="loginPassword">Password</label>
-        <input class="form-control" id="loginPassword" name="password" type="password"
-               placeholder="Enter your password" autocomplete="current-password" required />
+        <input class="form-control" id="loginPassword" name="password" type="password" placeholder="Enter your password" autocomplete="current-password" required />
       </div>
       <button type="submit" class="btn btn-primary btn-block btn-lg" id="loginBtn">Sign In</button>
+      <div style="text-align:right;margin-top:8px">
+        <button class="link-btn" id="showForgot" style="font-size:13px;color:#6b7280;font-weight:500">Forgot password?</button>
+      </div>
     </form>
     <div class="divider-text">or</div>
     <p style="text-align:center;font-size:14px;color:#6b7280;margin:0">
@@ -85,7 +190,71 @@
     </p>
   </div>
 
-  <!-- ── REGISTER VIEW ───────────────────────────────────────────────────── -->
+  <!-- ── FORGOT PASSWORD VIEW ──────────────────────────────────────────── -->
+  <div class="login-card hidden" id="forgotView">
+    <div class="login-logo">
+      <div class="logo-icon" id="forgotLogo">🛒</div>
+      <h1 id="forgotBrandName">POS System</h1>
+      <div class="loyalty-badge">🔒 Password Reset</div>
+    </div>
+
+    <!-- Step 1: verify identity -->
+    <div id="forgotStep1">
+      <p style="font-size:13px;color:#6b7280;margin:0 0 16px;text-align:center">Enter your details exactly as registered to verify your identity.</p>
+      <div id="forgotError" class="login-error hidden"></div>
+      <form class="login-form" id="forgotForm">
+        <div class="form-group">
+          <label class="form-label">Full Name *</label>
+          <input class="form-control" id="forgotName" type="text" placeholder="Your full name" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Contact Number *</label>
+          <input class="form-control" id="forgotContact" type="tel" placeholder="Your contact number" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email Address *</label>
+          <input class="form-control" id="forgotEmail" type="email" placeholder="Your email address" required />
+        </div>
+        <button type="submit" class="btn btn-primary btn-block btn-lg" id="verifyBtn">Verify Identity</button>
+      </form>
+    </div>
+
+    <!-- Step 2: set new password -->
+    <div id="forgotStep2" class="hidden">
+      <div style="text-align:center;margin-bottom:16px">
+        <div style="font-size:24px">✅</div>
+        <div style="font-weight:700;color:#111827;margin-top:4px" id="forgotVerifiedName"></div>
+        <div style="font-size:13px;color:#6b7280">Identity verified — set your new password</div>
+      </div>
+      <div id="resetError" class="login-error hidden"></div>
+      <form class="login-form" id="resetForm">
+        <div class="form-group">
+          <label class="form-label">New Password *</label>
+          <input class="form-control" id="resetPassword" type="password" placeholder="New password" required autocomplete="new-password" />
+          <div class="pw-strength-bar"><div class="pw-strength-fill" id="resetStrengthFill"></div></div>
+          <div class="pw-reqs" id="resetPwReqs">
+            <span class="pw-req" id="rreq-len">At least 8 characters</span>
+            <span class="pw-req" id="rreq-upper">1 uppercase letter (A–Z)</span>
+            <span class="pw-req" id="rreq-lower">1 lowercase letter (a–z)</span>
+            <span class="pw-req" id="rreq-num">1 number (0–9)</span>
+            <span class="pw-req" id="rreq-special">1 special character (!@#$…)</span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Confirm Password *</label>
+          <input class="form-control" id="resetConfirm" type="password" placeholder="Repeat new password" required autocomplete="new-password" />
+          <div id="resetMatchHint" style="font-size:12px;margin-top:4px"></div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block btn-lg" id="resetBtn">Set New Password</button>
+      </form>
+    </div>
+
+    <div style="text-align:center;margin-top:16px">
+      <button class="link-btn" id="backToLogin" style="font-size:13px;color:#6b7280;font-weight:500">← Back to Sign In</button>
+    </div>
+  </div>
+
+  <!-- ── REGISTER VIEW ─────────────────────────────────────────────────── -->
   <div class="login-card hidden" id="registerView">
     <div class="login-logo">
       <div class="logo-icon" id="registerLogo">🛒</div>
@@ -97,24 +266,38 @@
     <form class="login-form" id="registerForm" autocomplete="on">
       <div class="form-group">
         <label class="form-label" for="regFullName">Full Name *</label>
-        <input class="form-control" id="regFullName" name="name" type="text"
-               placeholder="e.g. Maria Santos" autocomplete="name" required />
+        <input class="form-control" id="regFullName" name="name" type="text" placeholder="e.g. Maria Santos" autocomplete="name" required />
       </div>
       <div class="form-group">
         <label class="form-label" for="regContact">Contact Number *</label>
-        <input class="form-control" id="regContact" name="tel" type="tel"
-               placeholder="e.g. 09123456789" autocomplete="tel" required />
+        <input class="form-control" id="regContact" name="tel" type="tel" placeholder="e.g. 09123456789" autocomplete="tel" required />
       </div>
       <div class="form-group">
         <label class="form-label" for="regEmail">Email Address *</label>
-        <input class="form-control" id="regEmail" name="email" type="email"
-               placeholder="e.g. maria@email.com" autocomplete="email" required />
+        <input class="form-control" id="regEmail" name="email" type="email" placeholder="e.g. maria@email.com" autocomplete="email" required />
       </div>
       <div class="form-group">
         <label class="form-label" for="regPassword">Password *</label>
-        <input class="form-control" id="regPassword" name="new-password" type="password"
-               placeholder="Min 6 characters" autocomplete="new-password" required minlength="6" />
+        <input class="form-control" id="regPassword" name="new-password" type="password" placeholder="Min 8 characters" autocomplete="new-password" required minlength="8" />
+        <div class="pw-strength-bar"><div class="pw-strength-fill" id="regStrengthFill"></div></div>
+        <div class="pw-reqs">
+          <span class="pw-req" id="req-len">At least 8 characters</span>
+          <span class="pw-req" id="req-upper">1 uppercase letter (A–Z)</span>
+          <span class="pw-req" id="req-lower">1 lowercase letter (a–z)</span>
+          <span class="pw-req" id="req-num">1 number (0–9)</span>
+          <span class="pw-req" id="req-special">1 special character (!@#$…)</span>
+        </div>
         <div class="form-hint">At least 6 characters</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="regMyCode">Your Referral Code * <span style="color:#9ca3af;font-weight:400">(8 characters, letters &amp; numbers)</span></label>
+        <input class="form-control" id="regMyCode" type="text" placeholder="e.g. MARIA001" maxlength="8" autocomplete="off" style="text-transform:uppercase;letter-spacing:2px;font-weight:700" />
+        <div class="ref-status" id="myCodeStatus"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="regReferral">Referred by (Code) <span style="color:#9ca3af;font-weight:400">(optional)</span></label>
+        <input class="form-control" id="regReferral" type="text" placeholder="Enter referrer's 8-char code" maxlength="8" autocomplete="off" style="text-transform:uppercase;letter-spacing:2px" />
+        <div class="ref-status" id="refStatus"></div>
       </div>
       <button type="submit" class="btn btn-primary btn-block btn-lg" id="registerBtn">Create Account</button>
     </form>
@@ -123,33 +306,67 @@
       Already a member? <button class="link-btn" id="showLogin">Sign in</button>
     </p>
   </div>
+</div>
 
-  <!-- ── MEMBER DASHBOARD ────────────────────────────────────────────────── -->
-  <div class="login-card hidden" id="dashboardView">
-    <div class="login-logo" style="margin-bottom:0">
-      <div class="logo-icon" id="dashLogo">🛒</div>
-      <h1 id="dashBrandName">POS System</h1>
-      <div class="loyalty-badge">⭐ Loyalty Member</div>
+<!-- ── MEMBER DASHBOARD ──────────────────────────────────────────────────── -->
+<div class="dash-page hidden" id="dashboardView">
+  <div class="dash-topbar">
+    <div class="dash-brand">
+      <div class="dash-logo-box" id="dashLogo">🛒</div>
+      <div class="dash-brand-name" id="dashBrandName">Loyalty Rewards</div>
     </div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <span style="font-size:13px;color:#6b7280">Hi, <strong id="dashHiName"></strong></span>
+      <button class="btn btn-secondary" id="dashLogout" style="padding:6px 14px;font-size:13px">Sign Out</button>
+    </div>
+  </div>
+
+  <div class="dash-content">
+
+    <!-- Points card -->
     <div class="points-card">
       <div class="points-label">Your Points Balance</div>
       <div class="points-value" id="dashPoints">0</div>
       <div class="points-unit">pts</div>
     </div>
-    <div class="member-info">
-      <span><strong>Name</strong> <span id="dashName">—</span></span>
-      <span><strong>Contact</strong> <span id="dashContact">—</span></span>
-      <span><strong>Email</strong> <span id="dashEmail">—</span></span>
-      <span><strong>Member Since</strong> <span id="dashSince">—</span></span>
-    </div>
-    <button class="btn btn-secondary btn-block" id="dashLogout">Sign Out</button>
-  </div>
 
+    <!-- Profile -->
+    <div class="info-card">
+      <h3>My Profile</h3>
+      <div class="info-row"><span class="lbl">Full Name</span><span class="val" id="dashName">—</span></div>
+      <div class="info-row"><span class="lbl">Contact</span><span class="val" id="dashContact">—</span></div>
+      <div class="info-row"><span class="lbl">Email</span><span class="val" id="dashEmail">—</span></div>
+      <div class="info-row"><span class="lbl">Member Since</span><span class="val" id="dashSince">—</span></div>
+    </div>
+
+    <!-- Referral code -->
+    <div class="info-card">
+      <h3>My Referral Code</h3>
+      <p style="font-size:13px;color:#6b7280;margin:0 0 14px">Share your contact number as a referral code. When someone signs up using it, they'll appear in your network below.</p>
+      <div class="ref-code-box">
+        <div>
+          <div class="ref-code-label">Your Code</div>
+          <div class="ref-code-value" id="dashRefCode">—</div>
+        </div>
+        <button class="copy-btn" id="copyRefBtn">📋 Copy</button>
+      </div>
+    </div>
+
+    <!-- Referral tree -->
+    <div class="tree-card">
+      <div class="tree-card-header">
+        <span class="tree-card-title">My Referral Network</span>
+        <span id="treeCountBadge" style="font-size:12px;color:#6b7280"></span>
+      </div>
+      <div id="treeWrap"><div class="tree-empty">Loading network…</div></div>
+    </div>
+
+  </div>
 </div>
 
 <script src="/js/common.js"></script>
 <script>
-  const LOYALTY_KEY = 'loyalty_token';
+  const LOYALTY_KEY        = 'loyalty_token';
   const LOYALTY_MEMBER_KEY = 'loyalty_member';
 
   function getLoyaltyToken()  { return localStorage.getItem(LOYALTY_KEY); }
@@ -163,49 +380,108 @@
     localStorage.removeItem(LOYALTY_MEMBER_KEY);
   }
 
-  function showView(id) {
-    ['loginView', 'registerView', 'dashboardView'].forEach(v => {
-      document.getElementById(v).classList.toggle('hidden', v !== id);
-    });
-  }
-
-  function fmtMemberDate(iso) {
+  function fmtDate(iso) {
     if (!iso) return '—';
-    return new Date(iso).toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' });
+    return new Date(iso).toLocaleDateString('en-PH', { year:'numeric', month:'long', day:'numeric' });
   }
 
-  function applyBranding(s) {
-    const name = s.business_name || 'POS System';
-    document.title = name + ' — Loyalty';
-    ['loginBrandName', 'registerBrandName', 'dashBrandName'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.textContent = name;
-    });
-    ['loginLogo', 'registerLogo', 'dashLogo'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) applyLogoToEl(el, s, 'max-height:72px;width:auto');
-    });
+
+  function showAuth()  { document.getElementById('authPages').classList.remove('hidden'); document.getElementById('dashboardView').classList.add('hidden'); }
+  function showDash()  { document.getElementById('authPages').classList.add('hidden');    document.getElementById('dashboardView').classList.remove('hidden'); }
+
+  function showView(id) {
+    ['loginView','registerView','forgotView'].forEach(v => document.getElementById(v).classList.toggle('hidden', v !== id));
   }
 
-  function showDashboard(member) {
+  function populateDash(member) {
     document.getElementById('dashPoints').textContent  = (member.points || 0).toLocaleString();
+    document.getElementById('dashHiName').textContent  = member.full_name.split(' ')[0];
     document.getElementById('dashName').textContent    = member.full_name;
     document.getElementById('dashContact').textContent = member.contact_number;
     document.getElementById('dashEmail').textContent   = member.email;
-    document.getElementById('dashSince').textContent   = fmtMemberDate(member.created_at);
-    showView('dashboardView');
+    document.getElementById('dashSince').textContent   = fmtDate(member.created_at);
+    document.getElementById('dashRefCode').textContent = member.referral_code || member.contact_number.slice(0,8).toUpperCase();
   }
 
-  // Load branding
+  async function loadTree(member) {
+    const wrap = document.getElementById('treeWrap');
+    try {
+      const tree = await fetch('/api/loyalty/me/referrals', {
+        headers: { 'Authorization': 'Bearer ' + getLoyaltyToken() }
+      }).then(r => r.json());
+
+      const total = tree.reduce((s, n) => s + 1 + n.referrals.length, 0);
+      document.getElementById('treeCountBadge').textContent = total ? `${total} member${total>1?'s':''} in your network` : '';
+
+      if (!tree.length) {
+        wrap.innerHTML = `<div class="tree-empty">No referrals yet.<br><span style="font-size:12px">Share your code <strong>${member.contact_number}</strong> to grow your network.</span></div>`;
+        return;
+      }
+
+      const l1Html = tree.map(n => {
+        const l2Html = n.referrals.map(c => `
+          <div class="tree-l2-connector">
+            <div class="tree-l2-node">
+              <div class="tree-l2-avatar">${c.full_name[0].toUpperCase()}</div>
+              <span class="tree-l2-name">${c.full_name}</span>
+              <span class="tree-l2-pts">${(c.points||0).toLocaleString()} pts</span>
+            </div>
+          </div>`).join('');
+        return `
+          <div class="tree-l1-item">
+            <div class="tree-l1-connector">
+              <div class="tree-l1-node">
+                <div class="tree-l1-avatar">${n.full_name[0].toUpperCase()}</div>
+                <div>
+                  <span class="tree-l1-name">${n.full_name}</span>
+                  ${n.referrals.length ? `<span class="tree-count-badge">${n.referrals.length} referral${n.referrals.length>1?'s':''}</span>` : ''}
+                </div>
+                <span class="tree-l1-pts">${(n.points||0).toLocaleString()} pts</span>
+              </div>
+            </div>
+            ${l2Html ? `<div class="tree-level2">${l2Html}</div>` : ''}
+          </div>`;
+      }).join('');
+
+      wrap.innerHTML = `
+        <div class="tree-wrap">
+          <div class="tree-root">
+            <div class="tree-me">
+              <div class="tree-me-avatar">${member.full_name[0].toUpperCase()}</div>
+              ${member.full_name} <span style="opacity:.7;font-size:12px">(You)</span>
+            </div>
+            <div class="tree-level1">${l1Html}</div>
+          </div>
+        </div>`;
+    } catch {
+      wrap.innerHTML = '<div class="tree-empty">Could not load referral network.</div>';
+    }
+  }
+
+  function enterDashboard(member) {
+    populateDash(member);
+    showDash();
+    loadTree(member);
+  }
+
+  // Copy referral code
+  document.getElementById('copyRefBtn').addEventListener('click', () => {
+    const code = document.getElementById('dashRefCode').textContent;
+    navigator.clipboard?.writeText(code).then(() => {
+      const btn = document.getElementById('copyRefBtn');
+      btn.textContent = '✓ Copied!';
+      setTimeout(() => btn.textContent = '📋 Copy', 2000);
+    });
+  });
+
+  // Branding
   loadAppSettings().then(applyBranding);
 
-  // Auto-login if session exists
-  const existingMember = getLoyaltyMember();
-  if (existingMember && getLoyaltyToken()) {
-    showDashboard(existingMember);
-  }
+  // Auto-login
+  const existing = getLoyaltyMember();
+  if (existing && getLoyaltyToken()) { enterDashboard(existing); }
 
-  // Toggle views
+  // Toggle auth views
   document.getElementById('showRegister').addEventListener('click', () => {
     document.getElementById('loginError').classList.add('hidden');
     showView('registerView');
@@ -216,34 +492,68 @@
     showView('loginView');
   });
 
+  // My code — availability check
+  let myCodeTimer = null;
+  document.getElementById('regMyCode').addEventListener('input', e => {
+    e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,'');
+    const val = e.target.value.trim();
+    const st  = document.getElementById('myCodeStatus');
+    clearTimeout(myCodeTimer);
+    if (!val) { st.textContent=''; return; }
+    if (val.length !== 8) {
+      st.innerHTML = `<span style="color:#d97706">${val.length}/8 characters</span>`;
+      return;
+    }
+    st.innerHTML = '<span style="color:#9ca3af">Checking availability…</span>';
+    myCodeTimer = setTimeout(async () => {
+      try {
+        const r = await fetch(`/api/loyalty/check-code?code=${encodeURIComponent(val)}`).then(x=>x.json());
+        if (r.error) { st.innerHTML=`<span style="color:#dc2626">✕ ${r.error}</span>`; return; }
+        st.innerHTML = r.available
+          ? '<span style="color:#059669;font-weight:600">✓ Code available</span>'
+          : '<span style="color:#dc2626">✕ Code already taken — choose another</span>';
+      } catch { st.innerHTML='<span style="color:#dc2626">Could not check availability</span>'; }
+    }, 400);
+  });
+
+  // Referral code validation (debounced)
+  let refTimer = null;
+  document.getElementById('regReferral').addEventListener('input', e => {
+    e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,'');
+    const val = document.getElementById('regReferral').value.trim();
+    const st  = document.getElementById('refStatus');
+    clearTimeout(refTimer);
+    if (!val) { st.textContent = ''; return; }
+    st.innerHTML = '<span style="color:#9ca3af">Checking…</span>';
+    refTimer = setTimeout(async () => {
+      try {
+        const r = await fetch(`/api/loyalty/referral-check?code=${encodeURIComponent(val)}`).then(x => x.json());
+        if (r.error) throw new Error(r.error);
+        st.innerHTML = `<span style="color:#059669;font-weight:600">✓ Referred by ${r.full_name}</span>`;
+      } catch {
+        st.innerHTML = '<span style="color:#dc2626">✕ Referral code not found</span>';
+      }
+    }, 400);
+  });
+
   // Login
   document.getElementById('loginForm').addEventListener('submit', async e => {
     e.preventDefault();
     const btn = document.getElementById('loginBtn');
     const errEl = document.getElementById('loginError');
     errEl.classList.add('hidden');
-    btn.disabled = true;
-    btn.textContent = 'Signing in…';
+    btn.disabled = true; btn.textContent = 'Signing in…';
     try {
-      const res = await fetch('/api/loyalty/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contact_number: document.getElementById('loginContact').value.trim(),
-          password: document.getElementById('loginPassword').value
-        })
-      });
+      const res  = await fetch('/api/loyalty/login', { method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ contact_number: document.getElementById('loginContact').value.trim(), password: document.getElementById('loginPassword').value }) });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Login failed');
       saveLoyaltySession(data.token, data.member);
-      showDashboard(data.member);
+      enterDashboard(data.member);
     } catch (err) {
       errEl.textContent = err.message;
       errEl.classList.remove('hidden');
-    } finally {
-      btn.disabled = false;
-      btn.textContent = 'Sign In';
-    }
+    } finally { btn.disabled = false; btn.textContent = 'Sign In'; }
   });
 
   // Register
@@ -252,40 +562,154 @@
     const btn = document.getElementById('registerBtn');
     const errEl = document.getElementById('registerError');
     const successEl = document.getElementById('registerSuccess');
-    errEl.classList.add('hidden');
-    successEl.style.display = 'none';
-    btn.disabled = true;
-    btn.textContent = 'Creating account…';
+    errEl.classList.add('hidden'); successEl.style.display = 'none';
+    btn.disabled = true; btn.textContent = 'Creating account…';
     try {
-      const res = await fetch('/api/loyalty/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res  = await fetch('/api/loyalty/register', { method:'POST', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({
           full_name:      document.getElementById('regFullName').value.trim(),
           contact_number: document.getElementById('regContact').value.trim(),
           email:          document.getElementById('regEmail').value.trim(),
-          password:       document.getElementById('regPassword').value
-        })
-      });
+          password:       document.getElementById('regPassword').value,
+          my_code:        document.getElementById('regMyCode').value.trim().toUpperCase() || null,
+          referral_code:  document.getElementById('regReferral').value.trim().toUpperCase() || null
+        }) });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Registration failed');
       successEl.style.display = 'block';
       saveLoyaltySession(data.token, data.member);
-      setTimeout(() => showDashboard(data.member), 800);
+      setTimeout(() => enterDashboard(data.member), 800);
     } catch (err) {
       errEl.textContent = err.message;
       errEl.classList.remove('hidden');
-    } finally {
-      btn.disabled = false;
-      btn.textContent = 'Create Account';
-    }
+    } finally { btn.disabled = false; btn.textContent = 'Create Account'; }
   });
 
   // Sign out
   document.getElementById('dashLogout').addEventListener('click', () => {
-    clearLoyaltySession();
-    showView('loginView');
+    clearLoyaltySession(); showAuth(); showView('loginView');
   });
+
+  // ── Password strength helper ───────────────────────────────────────────
+  function checkPw(pw, fillId, reqPrefix) {
+    const checks = {
+      len:     pw.length >= 8,
+      upper:   /[A-Z]/.test(pw),
+      lower:   /[a-z]/.test(pw),
+      num:     /[0-9]/.test(pw),
+      special: /[^A-Za-z0-9]/.test(pw)
+    };
+    const met = Object.values(checks).filter(Boolean).length;
+    const colors = ['#ef4444','#f97316','#eab308','#84cc16','#22c55e'];
+    const fill = document.getElementById(fillId);
+    fill.style.width = (met * 20) + '%';
+    fill.style.background = colors[met - 1] || '#e5e7eb';
+    Object.entries(checks).forEach(([k, v]) => {
+      const el = document.getElementById((reqPrefix || 'req-') + (k === 'len' ? 'len' : k === 'upper' ? 'upper' : k === 'lower' ? 'lower' : k === 'num' ? 'num' : 'special'));
+      if (el) el.classList.toggle('met', v);
+    });
+    return met === 5;
+  }
+
+  document.getElementById('regPassword').addEventListener('input', e => checkPw(e.target.value, 'regStrengthFill', 'req-'));
+  document.getElementById('resetPassword').addEventListener('input', e => {
+    checkPw(e.target.value, 'resetStrengthFill', 'rreq-');
+    const confirm = document.getElementById('resetConfirm').value;
+    if (confirm) updateMatchHint(e.target.value, confirm);
+  });
+  document.getElementById('resetConfirm').addEventListener('input', e => {
+    updateMatchHint(document.getElementById('resetPassword').value, e.target.value);
+  });
+
+  function updateMatchHint(pw, confirm) {
+    const el = document.getElementById('resetMatchHint');
+    if (!confirm) { el.textContent = ''; return; }
+    el.textContent = pw === confirm ? '✓ Passwords match' : '✗ Passwords do not match';
+    el.style.color  = pw === confirm ? '#059669' : '#dc2626';
+  }
+
+  // ── Forgot password navigation ─────────────────────────────────────────
+  function showForgotView() {
+    showView('forgotView');
+    document.getElementById('forgotStep1').classList.remove('hidden');
+    document.getElementById('forgotStep2').classList.add('hidden');
+    document.getElementById('forgotError').classList.add('hidden');
+    document.getElementById('forgotForm').reset();
+  }
+
+  document.getElementById('showForgot').addEventListener('click', () => { showAuth(); showForgotView(); });
+  document.getElementById('backToLogin').addEventListener('click', () => showView('loginView'));
+
+  // ── Step 1: verify identity ────────────────────────────────────────────
+  let _resetToken = null;
+  document.getElementById('forgotForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const btn = document.getElementById('verifyBtn');
+    const errEl = document.getElementById('forgotError');
+    errEl.classList.add('hidden');
+    btn.disabled = true; btn.textContent = 'Verifying…';
+    try {
+      const res  = await fetch('/api/loyalty/verify-identity', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          full_name:      document.getElementById('forgotName').value.trim(),
+          contact_number: document.getElementById('forgotContact').value.trim(),
+          email:          document.getElementById('forgotEmail').value.trim()
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Verification failed');
+      _resetToken = data.reset_token;
+      document.getElementById('forgotVerifiedName').textContent = data.full_name;
+      document.getElementById('forgotStep1').classList.add('hidden');
+      document.getElementById('forgotStep2').classList.remove('hidden');
+      document.getElementById('resetPassword').focus();
+    } catch (err) {
+      errEl.textContent = err.message;
+      errEl.classList.remove('hidden');
+    } finally { btn.disabled = false; btn.textContent = 'Verify Identity'; }
+  });
+
+  // ── Step 2: set new password ───────────────────────────────────────────
+  document.getElementById('resetForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const pw      = document.getElementById('resetPassword').value;
+    const confirm = document.getElementById('resetConfirm').value;
+    const errEl   = document.getElementById('resetError');
+    const btn     = document.getElementById('resetBtn');
+    errEl.classList.add('hidden');
+    if (pw !== confirm) { errEl.textContent = 'Passwords do not match'; errEl.classList.remove('hidden'); return; }
+    btn.disabled = true; btn.textContent = 'Saving…';
+    try {
+      const res  = await fetch('/api/loyalty/reset-password', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reset_token: _resetToken, new_password: pw })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Reset failed');
+      _resetToken = null;
+      showView('loginView');
+      // Show brief success toast
+      const t = document.createElement('div');
+      t.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#059669;color:#fff;padding:10px 20px;border-radius:8px;font-size:14px;font-weight:600;z-index:9999';
+      t.textContent = '✓ Password updated — please sign in';
+      document.body.appendChild(t);
+      setTimeout(() => t.remove(), 3500);
+    } catch (err) {
+      errEl.textContent = err.message;
+      errEl.classList.remove('hidden');
+    } finally { btn.disabled = false; btn.textContent = 'Set New Password'; }
+  });
+
+  // Update branding for forgot view
+  function applyBranding(s) {
+    const name = s.business_name || 'POS System';
+    document.title = name + ' — Loyalty';
+    ['loginBrandName','registerBrandName','forgotBrandName'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = name; });
+    document.getElementById('dashBrandName').textContent = name + ' Loyalty';
+    ['loginLogo','registerLogo','forgotLogo'].forEach(id => { const el = document.getElementById(id); if (el) applyLogoToEl(el, s, 'max-height:72px;width:auto'); });
+    applyLogoToEl(document.getElementById('dashLogo'), s, 'width:100%;height:100%;object-fit:contain;border-radius:8px');
+  }
 </script>
 </body>
 </html>

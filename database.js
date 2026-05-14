@@ -5,6 +5,7 @@ const sql = postgres(process.env.DATABASE_URL, {
   max: 10,
   idle_timeout: 20,
   connect_timeout: 10,
+  prepare: false,
 });
 
 async function initDB() {
@@ -152,6 +153,12 @@ async function initDB() {
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
   `;
+  // Migrations
+  await sql`ALTER TABLE loyalty_members ADD COLUMN IF NOT EXISTS referred_by_id INTEGER REFERENCES loyalty_members(id) ON DELETE SET NULL`;
+  await sql`ALTER TABLE loyalty_members ADD COLUMN IF NOT EXISTS referral_code TEXT`;
+  await sql`UPDATE loyalty_members SET referral_code = UPPER(RIGHT(REGEXP_REPLACE(contact_number, '[^A-Za-z0-9]', '', 'g'), 8))`;
+  await sql`DROP INDEX IF EXISTS idx_loyalty_referral_code`;
+  await sql`CREATE UNIQUE INDEX idx_loyalty_referral_code ON loyalty_members(referral_code) WHERE referral_code IS NOT NULL`;
 
   await sql`
     CREATE TABLE IF NOT EXISTS loyalty_tiers (
