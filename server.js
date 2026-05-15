@@ -300,6 +300,20 @@ app.delete('/api/orders/:id', auth, adminOnly, ah(async (req, res) => {
       await sql`INSERT INTO inventory_logs (product_id, user_id, type, quantity, previous_stock, new_stock, notes) VALUES (${item.product_id}, ${req.user.id}, 'in', ${item.quantity}, ${product.stock}, ${newStock}, ${'Void: ' + order.order_number})`;
       await applyCascadedLinks(sql, item.product_id, newStock, product.name, req.user.id);
     }
+
+    // Reverse accumulated points on void
+    const ptsToDeduct = parseInt(order.points_accumulated) || 0;
+    if (order.loyalty_member_id && ptsToDeduct > 0) {
+      const [member] = await sql`SELECT id, full_name, points FROM loyalty_members WHERE id = ${order.loyalty_member_id}`;
+      if (member) {
+        const newPoints = Math.max(0, member.points - ptsToDeduct);
+        await sql`UPDATE loyalty_members SET points = ${newPoints} WHERE id = ${member.id}`;
+        await sql`INSERT INTO loyalty_member_history (member_id, member_name, changed_by, field_changed, old_value, new_value)
+          VALUES (${member.id}, ${member.full_name}, ${req.user.full_name || req.user.username}, 'points',
+                  ${String(member.points)}, ${newPoints + ' (−' + ptsToDeduct + ' pts reversed — void ' + order.order_number + ')'})`;
+      }
+    }
+
     await sql`DELETE FROM order_items WHERE order_id=${order.id}`;
     await sql`DELETE FROM orders WHERE id=${order.id}`;
   });
@@ -331,13 +345,27 @@ app.post('/api/orders', auth, ah(async (req, res) => {
 
     const discountAmt  = parseFloat(discount) || 0;
     const redeemedPts  = parseInt(points_redeemed) || 0;
+    const memberId     = loyalty_member_id ? parseInt(loyalty_member_id) : null;
 
-    // Validate and deduct loyalty points before creating order
+    // Fetch loyalty member if provided
     let loyaltyMember = null;
-    if (loyalty_member_id && redeemedPts > 0) {
-      [loyaltyMember] = await sql`SELECT id, full_name, points FROM loyalty_members WHERE id = ${loyalty_member_id}`;
+    if (memberId) {
+      [loyaltyMember] = await sql`SELECT id, full_name, points FROM loyalty_members WHERE id = ${memberId}`;
       if (!loyaltyMember) throw Object.assign(new Error('Loyalty member not found'), { status: 404 });
-      if (loyaltyMember.points < redeemedPts) throw Object.assign(new Error(`Insufficient points. Member has ${loyaltyMember.points} pts (₱${loyaltyMember.points.toLocaleString()})`), { status: 400 });
+      if (redeemedPts > 0 && loyaltyMember.points < redeemedPts)
+        throw Object.assign(new Error(`Insufficient points. Member has ${loyaltyMember.points} pts (₱${loyaltyMember.points.toLocaleString()})`), { status: 400 });
+    }
+
+    // Calculate points to accumulate — only when member linked and no redemption used
+    let ptsToAccumulate = 0;
+    if (loyaltyMember && redeemedPts === 0) {
+      const [frozenCat] = await sql`SELECT name FROM categories WHERE id = 5`;
+      const excludedCat = frozenCat?.name || 'FROZEN RESELER';
+      const eligibleSpend = resolved.reduce((sum, { p, lineTotal }) =>
+        p.category === excludedCat ? sum : sum + lineTotal, 0);
+      const tiers = await sql`SELECT * FROM loyalty_tiers WHERE is_active = true ORDER BY min_spend DESC`;
+      const matchingTier = tiers.find(t => eligibleSpend >= t.min_spend);
+      if (matchingTier) ptsToAccumulate = matchingTier.points_earned;
     }
 
     const total    = Math.max(0, subtotal - discountAmt - redeemedPts);
@@ -345,7 +373,10 @@ app.post('/api/orders', auth, ah(async (req, res) => {
     const change   = Math.max(0, paid - total);
     const orderNum = `ORD-${Date.now()}`;
 
-    const [ord] = await sql`INSERT INTO orders (order_number, user_id, subtotal, discount, total, payment_method, amount_paid, change_amount, notes) VALUES (${orderNum}, ${req.user.id}, ${subtotal}, ${discountAmt}, ${total}, ${payment_method}, ${paid}, ${change}, ${notes || null}) RETURNING id`;
+    const [ord] = await sql`
+      INSERT INTO orders (order_number, user_id, subtotal, discount, total, payment_method, amount_paid, change_amount, notes, loyalty_member_id, points_redeemed, points_accumulated)
+      VALUES (${orderNum}, ${req.user.id}, ${subtotal}, ${discountAmt}, ${total}, ${payment_method}, ${paid}, ${change}, ${notes || null}, ${memberId}, ${redeemedPts}, ${ptsToAccumulate})
+      RETURNING id`;
 
     for (const { p, qty, lineTotal } of resolved) {
       await sql`INSERT INTO order_items (order_id, product_id, product_name, cost_price, selling_price, quantity, total) VALUES (${ord.id}, ${p.id}, ${p.name}, ${p.cost_price}, ${p.selling_price}, ${qty}, ${lineTotal})`;
@@ -355,7 +386,7 @@ app.post('/api/orders', auth, ah(async (req, res) => {
       await applyCascadedLinks(sql, p.id, newStock, p.name, req.user.id);
     }
 
-    // Deduct loyalty points
+    // Deduct redeemed points
     if (loyaltyMember && redeemedPts > 0) {
       const newPoints = loyaltyMember.points - redeemedPts;
       await sql`UPDATE loyalty_members SET points = ${newPoints} WHERE id = ${loyaltyMember.id}`;
@@ -364,7 +395,16 @@ app.post('/api/orders', auth, ah(async (req, res) => {
                 ${String(loyaltyMember.points)}, ${newPoints + ' (−' + redeemedPts + ' pts redeemed on ' + orderNum + ')'})`;
     }
 
-    return { order_id: ord.id, order_number: orderNum, subtotal, discount: discountAmt, points_redeemed: redeemedPts, total, change, payment_method };
+    // Accumulate earned points
+    if (loyaltyMember && ptsToAccumulate > 0) {
+      const newPoints = loyaltyMember.points + ptsToAccumulate;
+      await sql`UPDATE loyalty_members SET points = ${newPoints} WHERE id = ${loyaltyMember.id}`;
+      await sql`INSERT INTO loyalty_member_history (member_id, member_name, changed_by, field_changed, old_value, new_value)
+        VALUES (${loyaltyMember.id}, ${loyaltyMember.full_name}, ${req.user.full_name || req.user.username}, 'points',
+                ${String(loyaltyMember.points)}, ${newPoints + ' (+' + ptsToAccumulate + ' pts earned on ' + orderNum + ')'})`;
+    }
+
+    return { order_id: ord.id, order_number: orderNum, subtotal, discount: discountAmt, points_redeemed: redeemedPts, points_accumulated: ptsToAccumulate, total, change, payment_method };
   });
   res.json(result);
 }));
