@@ -737,6 +737,10 @@ app.get('/api/loyalty/members/:id/history', auth, adminOnly, ah(async (req, res)
 }));
 
 // ── Protected pages ────────────────────────────────────────────────────────────
+app.get('/sales/pos/login.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'views', 'login.html'));
+});
+
 app.get('/sales/pos/admin.html', (req, res) => {
   const token = extractToken(req);
   if (!token) return res.sendFile(path.join(__dirname, 'views', 'login.html'));
