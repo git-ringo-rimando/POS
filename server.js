@@ -359,8 +359,8 @@ app.post('/api/orders', auth, ah(async (req, res) => {
     // Calculate points to accumulate — only when member linked and no redemption used
     let ptsToAccumulate = 0;
     if (loyaltyMember && redeemedPts === 0) {
-      const [frozenCat] = await sql`SELECT name FROM categories WHERE id = 5`;
-      const excludedCat = frozenCat?.name || 'FROZEN RESELER';
+      const [frozenCat] = await sql`SELECT name FROM categories WHERE name ILIKE '%FROZEN RESELER%' LIMIT 1`;
+      const excludedCat = frozenCat?.name || '5 FROZEN RESELER';
       const eligibleSpend = resolved.reduce((sum, { p, lineTotal }) =>
         p.category === excludedCat ? sum : sum + lineTotal, 0);
       const tiers = await sql`SELECT * FROM loyalty_tiers WHERE is_active = true ORDER BY min_spend DESC`;
