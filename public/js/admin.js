@@ -1306,17 +1306,17 @@ async function loadLoyaltyTiers() {
       tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:#9ca3af">No tiers configured</td></tr>';
       return;
     }
-    tbody.innerHTML = tiers.map(t => `
+    const levelLabels = ['Buyer', 'Direct Referrer', "Referrer's Referrer", 'Level 4', 'Level 5'];
+    tbody.innerHTML = tiers.map((t, i) => `
       <tr>
-        <td><strong>${t.tier_name}</strong></td>
-        <td>₱${parseFloat(t.min_spend).toLocaleString()}</td>
+        <td><span style="background:#f3f4f6;color:#374151;font-weight:700;padding:2px 10px;border-radius:12px">Level ${t.sort_order}</span></td>
+        <td><strong>${t.tier_name || levelLabels[i] || 'Level ' + t.sort_order}</strong><span style="color:#9ca3af;font-size:12px;margin-left:6px">${levelLabels[i] || ''}</span></td>
         <td style="text-align:center"><span style="background:#ede9fe;color:#6d28d9;font-weight:700;padding:2px 10px;border-radius:12px">${t.points_earned} pt${t.points_earned !== 1 ? 's' : ''}</span></td>
         <td style="text-align:center">
           <span style="background:${t.is_active ? '#dcfce7' : '#f3f4f6'};color:${t.is_active ? '#16a34a' : '#9ca3af'};font-weight:600;padding:2px 10px;border-radius:12px;font-size:12px">
             ${t.is_active ? 'Active' : 'Inactive'}
           </span>
         </td>
-        <td style="color:#6b7280">${t.sort_order}</td>
         <td style="color:#6b7280">${fmtDate(t.updated_at)}</td>
       </tr>`).join('');
   } catch (e) {

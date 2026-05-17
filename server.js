@@ -301,17 +301,17 @@ app.delete('/api/orders/:id', auth, adminOnly, ah(async (req, res) => {
       await applyCascadedLinks(sql, item.product_id, newStock, product.name, req.user.id);
     }
 
-    // Reverse accumulated points on void
-    const ptsToDeduct = parseInt(order.points_accumulated) || 0;
-    if (order.loyalty_member_id && ptsToDeduct > 0) {
-      const [member] = await sql`SELECT id, full_name, points FROM loyalty_members WHERE id = ${order.loyalty_member_id}`;
-      if (member) {
-        const newPoints = Math.max(0, member.points - ptsToDeduct);
-        await sql`UPDATE loyalty_members SET points = ${newPoints} WHERE id = ${member.id}`;
-        await sql`INSERT INTO loyalty_member_history (member_id, member_name, changed_by, field_changed, old_value, new_value)
-          VALUES (${member.id}, ${member.full_name}, ${req.user.full_name || req.user.username}, 'points',
-                  ${String(member.points)}, ${newPoints + ' (−' + ptsToDeduct + ' pts reversed — void ' + order.order_number + ')'})`;
-      }
+    // Reverse all distributed points on void
+    const distributed = Array.isArray(order.points_distributed) ? order.points_distributed : [];
+    for (const dist of distributed) {
+      if (!dist.member_id || !dist.points) continue;
+      const [m] = await sql`SELECT id, full_name, points FROM loyalty_members WHERE id = ${dist.member_id}`;
+      if (!m) continue;
+      const newPoints = Math.max(0, m.points - dist.points);
+      await sql`UPDATE loyalty_members SET points = ${newPoints} WHERE id = ${m.id}`;
+      await sql`INSERT INTO loyalty_member_history (member_id, member_name, changed_by, field_changed, old_value, new_value)
+        VALUES (${m.id}, ${m.full_name}, ${req.user.full_name || req.user.username}, 'points',
+                ${String(m.points)}, ${newPoints + ' (−' + dist.points + ' pts reversed — void ' + order.order_number + ')'})`;
     }
 
     await sql`DELETE FROM order_items WHERE order_id=${order.id}`;
@@ -347,25 +347,32 @@ app.post('/api/orders', auth, ah(async (req, res) => {
     const redeemedPts  = parseInt(points_redeemed) || 0;
     const memberId     = loyalty_member_id ? parseInt(loyalty_member_id) : null;
 
-    // Fetch loyalty member if provided
+    // Fetch loyalty member if provided (include referred_by_id for chain walk)
     let loyaltyMember = null;
     if (memberId) {
-      [loyaltyMember] = await sql`SELECT id, full_name, points FROM loyalty_members WHERE id = ${memberId}`;
+      [loyaltyMember] = await sql`SELECT id, full_name, points, referred_by_id FROM loyalty_members WHERE id = ${memberId}`;
       if (!loyaltyMember) throw Object.assign(new Error('Loyalty member not found'), { status: 404 });
       if (redeemedPts > 0 && loyaltyMember.points < redeemedPts)
         throw Object.assign(new Error(`Insufficient points. Member has ${loyaltyMember.points} pts (₱${loyaltyMember.points.toLocaleString()})`), { status: 400 });
     }
 
-    // Calculate points to accumulate — only when member linked and no redemption used
+    // Distribute points up the referral chain — tier sort_order maps to chain level
+    // sort_order 1 = buyer, 2 = direct referrer, 3 = referrer's referrer, etc.
     let ptsToAccumulate = 0;
+    const pointsDistributed = []; // [{member_id, member_name, points}]
     if (loyaltyMember && redeemedPts === 0) {
-      const [frozenCat] = await sql`SELECT name FROM categories WHERE name ILIKE '%FROZEN RESELER%' LIMIT 1`;
-      const excludedCat = frozenCat?.name || '5 FROZEN RESELER';
-      const eligibleSpend = resolved.reduce((sum, { p, lineTotal }) =>
-        p.category === excludedCat ? sum : sum + lineTotal, 0);
-      const tiers = await sql`SELECT * FROM loyalty_tiers WHERE is_active = true ORDER BY min_spend DESC`;
-      const matchingTier = tiers.find(t => eligibleSpend >= t.min_spend);
-      if (matchingTier) ptsToAccumulate = matchingTier.points_earned;
+      const tiers = await sql`SELECT * FROM loyalty_tiers WHERE is_active = true ORDER BY sort_order ASC`;
+      let current = loyaltyMember;
+      for (const tier of tiers) {
+        if (!current) break;
+        if (tier.points_earned > 0) {
+          pointsDistributed.push({ member_id: current.id, member_name: current.full_name, points: tier.points_earned });
+          if (tier.sort_order === tiers[0].sort_order) ptsToAccumulate = tier.points_earned;
+        }
+        current = current.referred_by_id
+          ? (await sql`SELECT id, full_name, points, referred_by_id FROM loyalty_members WHERE id = ${current.referred_by_id}`)[0] || null
+          : null;
+      }
     }
 
     const total    = Math.max(0, subtotal - discountAmt - redeemedPts);
@@ -374,8 +381,8 @@ app.post('/api/orders', auth, ah(async (req, res) => {
     const orderNum = `ORD-${Date.now()}`;
 
     const [ord] = await sql`
-      INSERT INTO orders (order_number, user_id, subtotal, discount, total, payment_method, amount_paid, change_amount, notes, loyalty_member_id, points_redeemed, points_accumulated)
-      VALUES (${orderNum}, ${req.user.id}, ${subtotal}, ${discountAmt}, ${total}, ${payment_method}, ${paid}, ${change}, ${notes || null}, ${memberId}, ${redeemedPts}, ${ptsToAccumulate})
+      INSERT INTO orders (order_number, user_id, subtotal, discount, total, payment_method, amount_paid, change_amount, notes, loyalty_member_id, points_redeemed, points_accumulated, points_distributed)
+      VALUES (${orderNum}, ${req.user.id}, ${subtotal}, ${discountAmt}, ${total}, ${payment_method}, ${paid}, ${change}, ${notes || null}, ${memberId}, ${redeemedPts}, ${ptsToAccumulate}, ${JSON.stringify(pointsDistributed)})
       RETURNING id`;
 
     for (const { p, qty, lineTotal } of resolved) {
@@ -395,16 +402,21 @@ app.post('/api/orders', auth, ah(async (req, res) => {
                 ${String(loyaltyMember.points)}, ${newPoints + ' (−' + redeemedPts + ' pts redeemed on ' + orderNum + ')'})`;
     }
 
-    // Accumulate earned points
-    if (loyaltyMember && ptsToAccumulate > 0) {
-      const newPoints = loyaltyMember.points + ptsToAccumulate;
-      await sql`UPDATE loyalty_members SET points = ${newPoints} WHERE id = ${loyaltyMember.id}`;
+    // Distribute earned points up the referral chain
+    for (const dist of pointsDistributed) {
+      const [m] = await sql`SELECT id, full_name, points FROM loyalty_members WHERE id = ${dist.member_id}`;
+      if (!m) continue;
+      const newPoints = m.points + dist.points;
+      const label = dist.member_id === memberId
+        ? `+${dist.points} pts earned on ${orderNum}`
+        : `+${dist.points} pts referral bonus from ${orderNum}`;
+      await sql`UPDATE loyalty_members SET points = ${newPoints} WHERE id = ${m.id}`;
       await sql`INSERT INTO loyalty_member_history (member_id, member_name, changed_by, field_changed, old_value, new_value)
-        VALUES (${loyaltyMember.id}, ${loyaltyMember.full_name}, ${req.user.full_name || req.user.username}, 'points',
-                ${String(loyaltyMember.points)}, ${newPoints + ' (+' + ptsToAccumulate + ' pts earned on ' + orderNum + ')'})`;
+        VALUES (${m.id}, ${m.full_name}, ${req.user.full_name || req.user.username}, 'points',
+                ${String(m.points)}, ${newPoints + ' (' + label + ')'})`;
     }
 
-    return { order_id: ord.id, order_number: orderNum, subtotal, discount: discountAmt, points_redeemed: redeemedPts, points_accumulated: ptsToAccumulate, total, change, payment_method };
+    return { order_id: ord.id, order_number: orderNum, subtotal, discount: discountAmt, points_redeemed: redeemedPts, points_accumulated: ptsToAccumulate, points_distributed: pointsDistributed, total, change, payment_method };
   });
   res.json(result);
 }));

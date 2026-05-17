@@ -157,6 +157,7 @@ async function initDB() {
   await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS loyalty_member_id INTEGER REFERENCES loyalty_members(id) ON DELETE SET NULL`;
   await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS points_redeemed INTEGER DEFAULT 0`;
   await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS points_accumulated INTEGER DEFAULT 0`;
+  await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS points_distributed JSONB DEFAULT '[]'`;
 
   await sql`ALTER TABLE loyalty_members ADD COLUMN IF NOT EXISTS referred_by_id INTEGER REFERENCES loyalty_members(id) ON DELETE SET NULL`;
   await sql`ALTER TABLE loyalty_members ADD COLUMN IF NOT EXISTS referral_code TEXT`;
