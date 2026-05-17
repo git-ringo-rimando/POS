@@ -205,7 +205,8 @@ async function initDB() {
   await sql`
     INSERT INTO settings (key, value) VALUES
       ('business_name', 'Aling Inday Kamuning'),
-      ('logo', NULL)
+      ('logo', NULL),
+      ('points_ratio', '100')
     ON CONFLICT DO NOTHING
   `;
 

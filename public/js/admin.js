@@ -1297,21 +1297,58 @@ document.querySelectorAll('#section-loyalty .tab-btn').forEach(btn => {
   });
 });
 
+async function loadPointsRatio() {
+  try {
+    const s = await api.get('/settings');
+    const ratio = s.points_ratio || 100;
+    document.getElementById('ratioValue').textContent = '₱' + parseFloat(ratio).toLocaleString();
+    document.getElementById('ratioInput').value = ratio;
+  } catch (e) { /* silent */ }
+}
+
+document.getElementById('editRatioBtn').addEventListener('click', () => {
+  document.getElementById('ratioDisplay').style.display = 'none';
+  document.getElementById('ratioEdit').style.display = 'flex';
+  document.getElementById('ratioInput').focus();
+});
+
+document.getElementById('cancelRatioBtn').addEventListener('click', () => {
+  document.getElementById('ratioDisplay').style.display = 'flex';
+  document.getElementById('ratioEdit').style.display = 'none';
+});
+
+document.getElementById('saveRatioBtn').addEventListener('click', async () => {
+  const val = parseFloat(document.getElementById('ratioInput').value);
+  if (!val || val < 1) return showToast('Enter a valid amount (minimum ₱1)', 'error');
+  try {
+    await api.put('/settings', { points_ratio: val });
+    document.getElementById('ratioValue').textContent = '₱' + val.toLocaleString();
+    document.getElementById('ratioDisplay').style.display = 'flex';
+    document.getElementById('ratioEdit').style.display = 'none';
+    showToast('Points ratio updated', 'success');
+  } catch (e) { showToast(e.message, 'error'); }
+});
+
 async function loadLoyaltyTiers() {
+  await loadPointsRatio();
   const tbody = document.getElementById('tiersBody');
-  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:#9ca3af">Loading…</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:40px;color:#9ca3af">Loading…</td></tr>';
   try {
     const tiers = await api.get('/loyalty/tiers');
     if (!tiers.length) {
       tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:#9ca3af">No tiers configured</td></tr>';
       return;
     }
-    const levelLabels = ['Buyer', 'Direct Referrer', "Referrer's Referrer", 'Level 4', 'Level 5'];
+    const levelLabels = ['Buyer (ratio-based)', 'Direct Referrer', "Referrer's Referrer", 'Level 4', 'Level 5'];
     tbody.innerHTML = tiers.map((t, i) => `
       <tr>
         <td><span style="background:#f3f4f6;color:#374151;font-weight:700;padding:2px 10px;border-radius:12px">Level ${t.sort_order}</span></td>
         <td><strong>${t.tier_name || levelLabels[i] || 'Level ' + t.sort_order}</strong><span style="color:#9ca3af;font-size:12px;margin-left:6px">${levelLabels[i] || ''}</span></td>
-        <td style="text-align:center"><span style="background:#ede9fe;color:#6d28d9;font-weight:700;padding:2px 10px;border-radius:12px">${t.points_earned} pt${t.points_earned !== 1 ? 's' : ''}</span></td>
+        <td style="text-align:center">
+          ${i === 0
+            ? '<span style="background:#fef9c3;color:#a16207;font-weight:600;padding:2px 10px;border-radius:12px;font-size:12px">See ratio above</span>'
+            : `<span style="background:#ede9fe;color:#6d28d9;font-weight:700;padding:2px 10px;border-radius:12px">${t.points_earned} pt${t.points_earned !== 1 ? 's' : ''}</span>`}
+        </td>
         <td style="text-align:center">
           <span style="background:${t.is_active ? '#dcfce7' : '#f3f4f6'};color:${t.is_active ? '#16a34a' : '#9ca3af'};font-weight:600;padding:2px 10px;border-radius:12px;font-size:12px">
             ${t.is_active ? 'Active' : 'Inactive'}

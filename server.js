@@ -357,17 +357,29 @@ app.post('/api/orders', auth, ah(async (req, res) => {
     }
 
     // Distribute points up the referral chain — tier sort_order maps to chain level
-    // sort_order 1 = buyer, 2 = direct referrer, 3 = referrer's referrer, etc.
+    // Level 1 (buyer): ratio-based — floor(eligible_spend / points_ratio)
+    // Level 2+ (referrers): fixed points_earned from tiers table
     let ptsToAccumulate = 0;
-    const pointsDistributed = []; // [{member_id, member_name, points}]
+    const pointsDistributed = [];
     if (loyaltyMember && redeemedPts === 0) {
+      const [ratioRow] = await sql`SELECT value FROM settings WHERE key = 'points_ratio'`;
+      const pointsRatio = Math.max(1, parseFloat(ratioRow?.value) || 100);
+
+      const [frozenCat] = await sql`SELECT name FROM categories WHERE name ILIKE '%FROZEN RESELER%' LIMIT 1`;
+      const excludedCat = frozenCat?.name || '5 FROZEN RESELER';
+      const eligibleSpend = resolved.reduce((sum, { p, lineTotal }) =>
+        p.category === excludedCat ? sum : sum + lineTotal, 0);
+
       const tiers = await sql`SELECT * FROM loyalty_tiers WHERE is_active = true ORDER BY sort_order ASC`;
       let current = loyaltyMember;
-      for (const tier of tiers) {
+      for (let i = 0; i < tiers.length; i++) {
         if (!current) break;
-        if (tier.points_earned > 0) {
-          pointsDistributed.push({ member_id: current.id, member_name: current.full_name, points: tier.points_earned });
-          if (tier.sort_order === tiers[0].sort_order) ptsToAccumulate = tier.points_earned;
+        const pts = i === 0
+          ? Math.floor(eligibleSpend / pointsRatio)   // buyer: ratio-based
+          : tiers[i].points_earned;                   // referrers: fixed
+        if (pts > 0) {
+          pointsDistributed.push({ member_id: current.id, member_name: current.full_name, points: pts });
+          if (i === 0) ptsToAccumulate = pts;
         }
         current = current.referred_by_id
           ? (await sql`SELECT id, full_name, points, referred_by_id FROM loyalty_members WHERE id = ${current.referred_by_id}`)[0] || null
@@ -478,20 +490,24 @@ app.get('/api/product-history', auth, adminOnly, ah(async (req, res) => {
 
 // ── Settings ───────────────────────────────────────────────────────────────────
 app.get('/api/settings', ah(async (req, res) => {
-  const rows = await sql`SELECT key, value FROM settings WHERE key IN ('business_name', 'logo')`;
-  const out = { business_name: 'Aling Inday Kamuning Branch POS', logo: null };
-  rows.forEach(r => { out[r.key] = r.value; });
+  const rows = await sql`SELECT key, value FROM settings WHERE key IN ('business_name', 'logo', 'points_ratio')`;
+  const out = { business_name: 'Aling Inday Kamuning Branch POS', logo: null, points_ratio: 100 };
+  rows.forEach(r => { out[r.key] = r.key === 'points_ratio' ? parseFloat(r.value) || 100 : r.value; });
   res.json(out);
 }));
 
 app.put('/api/settings', auth, adminOnly, ah(async (req, res) => {
-  const { business_name, logo } = req.body;
+  const { business_name, logo, points_ratio } = req.body;
   if (business_name !== undefined) {
     const name = String(business_name).trim() || 'Aling Inday Kamuning Branch POS';
     await sql`INSERT INTO settings (key, value) VALUES ('business_name', ${name}) ON CONFLICT (key) DO UPDATE SET value = ${name}, updated_at = CURRENT_TIMESTAMP`;
   }
   if (logo !== undefined) {
     await sql`INSERT INTO settings (key, value) VALUES ('logo', ${logo}) ON CONFLICT (key) DO UPDATE SET value = ${logo}, updated_at = CURRENT_TIMESTAMP`;
+  }
+  if (points_ratio !== undefined) {
+    const ratio = Math.max(1, parseFloat(points_ratio) || 100);
+    await sql`INSERT INTO settings (key, value) VALUES ('points_ratio', ${String(ratio)}) ON CONFLICT (key) DO UPDATE SET value = ${String(ratio)}, updated_at = CURRENT_TIMESTAMP`;
   }
   res.json({ success: true });
 }));
