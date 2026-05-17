@@ -375,8 +375,8 @@ app.post('/api/orders', auth, ah(async (req, res) => {
       for (let i = 0; i < tiers.length; i++) {
         if (!current) break;
         const pts = i === 0
-          ? Math.floor(eligibleSpend / pointsRatio)   // buyer: ratio-based
-          : tiers[i].points_earned;                   // referrers: fixed
+          ? Math.floor(eligibleSpend / pointsRatio)              // buyer: global ratio
+          : Math.floor(eligibleSpend / tiers[i].points_earned);  // referrers: per-level ratio
         if (pts > 0) {
           pointsDistributed.push({ member_id: current.id, member_name: current.full_name, points: pts });
           if (i === 0) ptsToAccumulate = pts;

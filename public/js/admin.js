@@ -1339,7 +1339,7 @@ async function loadLoyaltyTiers() {
       tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:#9ca3af">No tiers configured</td></tr>';
       return;
     }
-    const levelLabels = ['Buyer (ratio-based)', 'Direct Referrer', "Referrer's Referrer", 'Level 4', 'Level 5'];
+    const levelLabels = ['Buyer', 'Direct Referrer', "Referrer's Referrer", 'Level 4', 'Level 5'];
     tbody.innerHTML = tiers.map((t, i) => `
       <tr>
         <td><span style="background:#f3f4f6;color:#374151;font-weight:700;padding:2px 10px;border-radius:12px">Level ${t.sort_order}</span></td>
@@ -1347,7 +1347,7 @@ async function loadLoyaltyTiers() {
         <td style="text-align:center">
           ${i === 0
             ? '<span style="background:#fef9c3;color:#a16207;font-weight:600;padding:2px 10px;border-radius:12px;font-size:12px">See ratio above</span>'
-            : `<span style="background:#ede9fe;color:#6d28d9;font-weight:700;padding:2px 10px;border-radius:12px">${t.points_earned} pt${t.points_earned !== 1 ? 's' : ''}</span>`}
+            : `<span style="background:#ede9fe;color:#6d28d9;font-weight:700;padding:2px 10px;border-radius:12px">₱${parseFloat(t.points_earned).toLocaleString()} per pt</span>`}
         </td>
         <td style="text-align:center">
           <span style="background:${t.is_active ? '#dcfce7' : '#f3f4f6'};color:${t.is_active ? '#16a34a' : '#9ca3af'};font-weight:600;padding:2px 10px;border-radius:12px;font-size:12px">
