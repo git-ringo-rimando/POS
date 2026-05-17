@@ -160,7 +160,7 @@ async function initDB() {
   await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS points_distributed JSONB DEFAULT '[]'`;
 
   // Set per-level spend ratios for referrer levels (pesos per 1 point, based on buyer's spend)
-  await sql`UPDATE loyalty_tiers SET points_earned = 300, is_active = true WHERE sort_order = 2`;
+  await sql`UPDATE loyalty_tiers SET points_earned = 250, is_active = true WHERE sort_order = 2`;
   await sql`UPDATE loyalty_tiers SET points_earned = 500, is_active = true WHERE sort_order = 3`;
 
   await sql`ALTER TABLE loyalty_members ADD COLUMN IF NOT EXISTS referred_by_id INTEGER REFERENCES loyalty_members(id) ON DELETE SET NULL`;
