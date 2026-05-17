@@ -302,7 +302,9 @@ app.delete('/api/orders/:id', auth, adminOnly, ah(async (req, res) => {
     }
 
     // Reverse all distributed points on void
-    const distributed = Array.isArray(order.points_distributed) ? order.points_distributed : [];
+    let distributed = order.points_distributed;
+    if (typeof distributed === 'string') { try { distributed = JSON.parse(distributed); } catch { distributed = []; } }
+    if (!Array.isArray(distributed)) distributed = [];
     for (const dist of distributed) {
       if (!dist.member_id || !dist.points) continue;
       const [m] = await sql`SELECT id, full_name, points FROM loyalty_members WHERE id = ${dist.member_id}`;
@@ -394,7 +396,7 @@ app.post('/api/orders', auth, ah(async (req, res) => {
 
     const [ord] = await sql`
       INSERT INTO orders (order_number, user_id, subtotal, discount, total, payment_method, amount_paid, change_amount, notes, loyalty_member_id, points_redeemed, points_accumulated, points_distributed)
-      VALUES (${orderNum}, ${req.user.id}, ${subtotal}, ${discountAmt}, ${total}, ${payment_method}, ${paid}, ${change}, ${notes || null}, ${memberId}, ${redeemedPts}, ${ptsToAccumulate}, ${JSON.stringify(pointsDistributed)})
+      VALUES (${orderNum}, ${req.user.id}, ${subtotal}, ${discountAmt}, ${total}, ${payment_method}, ${paid}, ${change}, ${notes || null}, ${memberId}, ${redeemedPts}, ${ptsToAccumulate}, ${sql.json(pointsDistributed)})
       RETURNING id`;
 
     for (const { p, qty, lineTotal } of resolved) {
