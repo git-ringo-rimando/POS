@@ -1271,6 +1271,7 @@ function renderLoyaltyTable(members) {
 document.getElementById('loyaltyRefreshBtn').addEventListener('click', () => {
   const activeTab = document.querySelector('#section-loyalty .tab-btn.active')?.dataset.tab;
   if (activeTab === 'loyalty-tiers') loadLoyaltyTiers();
+  else if (activeTab === 'loyalty-referrals') loadReferralNetwork();
   else loadLoyaltyMembers();
 });
 
@@ -1292,6 +1293,7 @@ document.querySelectorAll('#section-loyalty .tab-btn').forEach(btn => {
     btn.classList.add('active');
     document.getElementById(btn.dataset.tab).classList.add('active');
     if (btn.dataset.tab === 'loyalty-tiers') loadLoyaltyTiers();
+    if (btn.dataset.tab === 'loyalty-referrals') loadReferralNetwork();
   });
 });
 
@@ -1321,6 +1323,97 @@ async function loadLoyaltyTiers() {
     tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:40px;color:#ef4444">${e.message}</td></tr>`;
   }
 }
+
+// ── Referral Network ───────────────────────────────────────────────────────────
+let _referralMembers = [];
+
+async function loadReferralNetwork() {
+  const container = document.getElementById('referralTree');
+  container.innerHTML = '<div style="text-align:center;padding:40px;color:#9ca3af">Loading…</div>';
+  try {
+    _referralMembers = await api.get('/loyalty/members');
+    renderReferralList(_referralMembers);
+  } catch (e) {
+    container.innerHTML = `<div style="text-align:center;padding:40px;color:#ef4444">${e.message}</div>`;
+  }
+}
+
+function renderReferralList(members) {
+  const container = document.getElementById('referralTree');
+  if (!members.length) {
+    container.innerHTML = '<div style="text-align:center;padding:40px;color:#9ca3af">No members found</div>';
+    return;
+  }
+  container.innerHTML = members.map(m => `
+    <div class="card" style="margin-bottom:12px;cursor:pointer" onclick="toggleReferralTree(${m.id}, this)">
+      <div style="display:flex;align-items:center;gap:12px;padding:14px 16px">
+        <div style="width:38px;height:38px;border-radius:50%;background:#ede9fe;color:#6d28d9;font-weight:700;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0">
+          ${m.full_name.charAt(0).toUpperCase()}
+        </div>
+        <div style="flex:1">
+          <div style="font-weight:600">${m.full_name}</div>
+          <div style="font-size:12px;color:#9ca3af">${m.contact_number}</div>
+        </div>
+        <span style="background:#ede9fe;color:#6d28d9;font-weight:700;padding:2px 10px;border-radius:12px;font-size:13px">${(m.points||0).toLocaleString()} pts</span>
+        <span style="color:#9ca3af;font-size:18px" id="chevron-${m.id}">›</span>
+      </div>
+      <div id="referral-tree-${m.id}" style="display:none;border-top:1px solid #f3f4f6;padding:0 16px 12px"></div>
+    </div>`).join('');
+}
+
+async function toggleReferralTree(memberId, card) {
+  const treeDiv = document.getElementById(`referral-tree-${memberId}`);
+  const chevron = document.getElementById(`chevron-${memberId}`);
+  if (treeDiv.style.display !== 'none') {
+    treeDiv.style.display = 'none';
+    chevron.textContent = '›';
+    return;
+  }
+  treeDiv.style.display = 'block';
+  chevron.textContent = '⌄';
+  treeDiv.innerHTML = '<div style="padding:12px 0;color:#9ca3af;font-size:13px">Loading…</div>';
+  try {
+    const tree = await api.get(`/loyalty/members/${memberId}/referrals`);
+    if (!tree.length) {
+      treeDiv.innerHTML = '<div style="padding:12px 0;color:#9ca3af;font-size:13px">No referrals yet</div>';
+      return;
+    }
+    treeDiv.innerHTML = tree.map(l1 => `
+      <div style="margin-top:12px">
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 0 8px 16px;border-left:3px solid #ede9fe">
+          <div style="width:32px;height:32px;border-radius:50%;background:#ddd6fe;color:#6d28d9;font-weight:700;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0">
+            ${l1.full_name.charAt(0).toUpperCase()}
+          </div>
+          <div style="flex:1">
+            <div style="font-weight:600;font-size:14px">${l1.full_name}</div>
+            <div style="font-size:11px;color:#9ca3af">${l1.contact_number}${l1.referrals?.length ? ` · ${l1.referrals.length} referral${l1.referrals.length>1?'s':''}` : ''}</div>
+          </div>
+          <span style="background:#ede9fe;color:#6d28d9;font-weight:700;padding:1px 8px;border-radius:10px;font-size:12px">${(l1.points||0).toLocaleString()} pts</span>
+        </div>
+        ${(l1.referrals||[]).map(l2 => `
+          <div style="display:flex;align-items:center;gap:10px;padding:6px 0 6px 40px;border-left:3px solid #ede9fe;margin-left:16px">
+            <div style="width:26px;height:26px;border-radius:50%;background:#f5f3ff;color:#7c3aed;font-weight:700;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0">
+              ${l2.full_name.charAt(0).toUpperCase()}
+            </div>
+            <div style="flex:1">
+              <div style="font-weight:500;font-size:13px">${l2.full_name}</div>
+              <div style="font-size:11px;color:#9ca3af">${l2.contact_number}</div>
+            </div>
+            <span style="background:#f5f3ff;color:#7c3aed;font-weight:600;padding:1px 8px;border-radius:10px;font-size:11px">${(l2.points||0).toLocaleString()} pts</span>
+          </div>`).join('')}
+      </div>`).join('');
+  } catch (e) {
+    treeDiv.innerHTML = `<div style="padding:12px 0;color:#ef4444;font-size:13px">${e.message}</div>`;
+  }
+}
+
+document.getElementById('referralSearch').addEventListener('input', e => {
+  const q = e.target.value.toLowerCase();
+  const filtered = _referralMembers.filter(m =>
+    m.full_name.toLowerCase().includes(q) || m.contact_number.includes(q)
+  );
+  renderReferralList(filtered);
+});
 
 // ── Bootstrap ──────────────────────────────────────────────────────────────────
 loadAppSettings().then(applyAdminBranding);

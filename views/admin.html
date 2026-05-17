@@ -394,6 +394,7 @@
         <div class="tabs">
           <button class="tab-btn active" data-tab="loyalty-members">Members</button>
           <button class="tab-btn" data-tab="loyalty-tiers">Points Table</button>
+          <button class="tab-btn" data-tab="loyalty-referrals">Referral Network</button>
         </div>
 
         <!-- Members tab -->
@@ -413,6 +414,14 @@
               </table>
             </div>
           </div>
+        </div>
+
+        <!-- Referral Network tab -->
+        <div class="tab-panel" id="loyalty-referrals">
+          <div class="filters-bar">
+            <div class="search-input"><input class="form-control" id="referralSearch" placeholder="Search member by name or contact…" /></div>
+          </div>
+          <div id="referralTree" style="margin-top:4px"></div>
         </div>
 
         <!-- Points Table tab -->
