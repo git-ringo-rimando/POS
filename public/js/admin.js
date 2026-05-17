@@ -1268,7 +1268,11 @@ function renderLoyaltyTable(members) {
     </tr>`).join('');
 }
 
-document.getElementById('loyaltyRefreshBtn').addEventListener('click', loadLoyaltyMembers);
+document.getElementById('loyaltyRefreshBtn').addEventListener('click', () => {
+  const activeTab = document.querySelector('#section-loyalty .tab-btn.active')?.dataset.tab;
+  if (activeTab === 'loyalty-tiers') loadLoyaltyTiers();
+  else loadLoyaltyMembers();
+});
 
 document.getElementById('loyaltySearch').addEventListener('input', e => {
   const q = e.target.value.toLowerCase();
@@ -1279,6 +1283,44 @@ document.getElementById('loyaltySearch').addEventListener('input', e => {
   );
   renderLoyaltyTable(filtered);
 });
+
+// Loyalty tab switching
+document.querySelectorAll('#section-loyalty .tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#section-loyalty .tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('#section-loyalty .tab-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(btn.dataset.tab).classList.add('active');
+    if (btn.dataset.tab === 'loyalty-tiers') loadLoyaltyTiers();
+  });
+});
+
+async function loadLoyaltyTiers() {
+  const tbody = document.getElementById('tiersBody');
+  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:#9ca3af">Loading…</td></tr>';
+  try {
+    const tiers = await api.get('/loyalty/tiers');
+    if (!tiers.length) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:#9ca3af">No tiers configured</td></tr>';
+      return;
+    }
+    tbody.innerHTML = tiers.map(t => `
+      <tr>
+        <td><strong>${t.tier_name}</strong></td>
+        <td>₱${parseFloat(t.min_spend).toLocaleString()}</td>
+        <td style="text-align:center"><span style="background:#ede9fe;color:#6d28d9;font-weight:700;padding:2px 10px;border-radius:12px">${t.points_earned} pt${t.points_earned !== 1 ? 's' : ''}</span></td>
+        <td style="text-align:center">
+          <span style="background:${t.is_active ? '#dcfce7' : '#f3f4f6'};color:${t.is_active ? '#16a34a' : '#9ca3af'};font-weight:600;padding:2px 10px;border-radius:12px;font-size:12px">
+            ${t.is_active ? 'Active' : 'Inactive'}
+          </span>
+        </td>
+        <td style="color:#6b7280">${t.sort_order}</td>
+        <td style="color:#6b7280">${fmtDate(t.updated_at)}</td>
+      </tr>`).join('');
+  } catch (e) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:40px;color:#ef4444">${e.message}</td></tr>`;
+  }
+}
 
 // ── Bootstrap ──────────────────────────────────────────────────────────────────
 loadAppSettings().then(applyAdminBranding);

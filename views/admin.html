@@ -384,26 +384,56 @@
     <!-- ═══ LOYALTY MEMBERS ═════════════════════════════════════════════════ -->
     <section class="admin-section" id="section-loyalty">
       <div class="section-header">
-        <div><div class="section-title">Loyalty Members</div><div class="section-subtitle">Registered loyalty program clients</div></div>
+        <div><div class="section-title">Loyalty</div><div class="section-subtitle">Members and points configuration</div></div>
         <div class="section-actions">
           <button class="btn btn-secondary" id="loyaltyRefreshBtn">↺ Refresh</button>
           <a href="/AIR" target="_blank" class="btn btn-primary">⭐ Loyalty Portal</a>
         </div>
       </div>
       <div class="section-content">
-        <div class="kpi-grid" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr));margin-bottom:20px">
-          <div class="kpi-card"><div class="kpi-icon purple">⭐</div><div><div class="kpi-label">Total Members</div><div class="kpi-value" id="loyaltyTotalMembers">—</div></div></div>
-          <div class="kpi-card"><div class="kpi-icon blue">🏆</div><div><div class="kpi-label">Total Points Issued</div><div class="kpi-value" id="loyaltyTotalPoints">—</div></div></div>
+        <div class="tabs">
+          <button class="tab-btn active" data-tab="loyalty-members">Members</button>
+          <button class="tab-btn" data-tab="loyalty-tiers">Points Table</button>
         </div>
-        <div class="filters-bar">
-          <div class="search-input"><input class="form-control" id="loyaltySearch" placeholder="Search by name, contact, or email…" /></div>
+
+        <!-- Members tab -->
+        <div class="tab-panel active" id="loyalty-members">
+          <div class="kpi-grid" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr));margin-bottom:20px">
+            <div class="kpi-card"><div class="kpi-icon purple">⭐</div><div><div class="kpi-label">Total Members</div><div class="kpi-value" id="loyaltyTotalMembers">—</div></div></div>
+            <div class="kpi-card"><div class="kpi-icon blue">🏆</div><div><div class="kpi-label">Total Points Issued</div><div class="kpi-value" id="loyaltyTotalPoints">—</div></div></div>
+          </div>
+          <div class="filters-bar">
+            <div class="search-input"><input class="form-control" id="loyaltySearch" placeholder="Search by name, contact, or email…" /></div>
+          </div>
+          <div class="card">
+            <div class="table-wrap">
+              <table class="table">
+                <thead><tr><th>#</th><th>Full Name</th><th>Contact Number</th><th>Email</th><th style="text-align:center">Points</th><th>Member Since</th></tr></thead>
+                <tbody id="loyaltyBody"><tr><td colspan="6" style="text-align:center;padding:40px;color:#9ca3af">Loading…</td></tr></tbody>
+              </table>
+            </div>
+          </div>
         </div>
-        <div class="card">
-          <div class="table-wrap">
-            <table class="table">
-              <thead><tr><th>#</th><th>Full Name</th><th>Contact Number</th><th>Email</th><th style="text-align:center">Points</th><th>Member Since</th></tr></thead>
-              <tbody id="loyaltyBody"><tr><td colspan="6" style="text-align:center;padding:40px;color:#9ca3af">Loading…</td></tr></tbody>
-            </table>
+
+        <!-- Points Table tab -->
+        <div class="tab-panel" id="loyalty-tiers">
+          <div class="card">
+            <div class="card-header"><div class="card-title">Points Tiers</div><div class="card-subtitle">Points earned per transaction based on eligible spend (excludes FROZEN RESELER items)</div></div>
+            <div class="table-wrap">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Tier Name</th>
+                    <th>Min Spend (₱)</th>
+                    <th style="text-align:center">Points Earned</th>
+                    <th style="text-align:center">Status</th>
+                    <th>Sort Order</th>
+                    <th>Last Updated</th>
+                  </tr>
+                </thead>
+                <tbody id="tiersBody"><tr><td colspan="6" style="text-align:center;padding:40px;color:#9ca3af">Loading…</td></tr></tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>
