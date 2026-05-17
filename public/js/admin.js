@@ -1,6 +1,6 @@
 // ── Auth guard ─────────────────────────────────────────────────────────────────
 const user = getUser();
-if (!user || !getToken()) { window.location.href = '/'; throw new Error('stop'); }
+if (!user || !getToken()) { window.location.href = '/sales/pos/admin.html'; throw new Error('stop'); }
 
 const isAdmin   = user.role === 'admin';
 const isCashier = user.role === 'cashier';
