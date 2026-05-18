@@ -824,6 +824,12 @@ app.get('/sales/pos/admin.html', (req, res) => {
   }
 });
 
+// ── Affiliate / referral link ──────────────────────────────────────────────────
+app.get('/air/:code', (req, res) => {
+  const code = req.params.code.toUpperCase().replace(/[^A-Z0-9]/g, '');
+  res.redirect(302, `/AIR.html?ref=${encodeURIComponent(code)}`);
+});
+
 // ── SPA fallback ───────────────────────────────────────────────────────────────
 app.get('*', (req, res) => {
   if (req.path.startsWith('/api/')) return res.status(404).json({ error: 'Not found' });

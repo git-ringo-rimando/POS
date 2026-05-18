@@ -1,0 +1,19 @@
+{
+  "name": "Loyalty Rewards",
+  "short_name": "Loyalty",
+  "description": "Earn and track your loyalty points",
+  "start_url": "/AIR.html",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#4f46e5",
+  "background_color": "#1e1b4b",
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

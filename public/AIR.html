@@ -4,6 +4,13 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Loyalty Rewards</title>
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#4f46e5" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Loyalty" />
+  <link rel="apple-touch-icon" href="/icons/icon.svg" />
+  <meta name="mobile-web-app-capable" content="yes" />
   <link rel="stylesheet" href="/css/style.css" />
   <style>
     /* ── shared ─────────────────────────────────────────────────────── */
@@ -342,13 +349,20 @@
     <!-- Referral code -->
     <div class="info-card">
       <h3>My Referral Code</h3>
-      <p style="font-size:13px;color:#6b7280;margin:0 0 14px">Share your contact number as a referral code. When someone signs up using it, they'll appear in your network below.</p>
+      <p style="font-size:13px;color:#6b7280;margin:0 0 14px">Share your affiliate link — when someone opens it they'll land directly on the registration page with your code pre-filled.</p>
       <div class="ref-code-box">
         <div>
           <div class="ref-code-label">Your Code</div>
           <div class="ref-code-value" id="dashRefCode">—</div>
         </div>
-        <button class="copy-btn" id="copyRefBtn">📋 Copy</button>
+        <button class="copy-btn" id="copyRefBtn">📋 Copy Code</button>
+      </div>
+      <div style="margin-top:10px;display:flex;align-items:center;gap:8px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 14px">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:10px;font-weight:700;color:#15803d;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px">Your Affiliate Link</div>
+          <div id="dashAffLink" style="font-size:12px;color:#166534;font-weight:600;word-break:break-all">—</div>
+        </div>
+        <button class="copy-btn" id="copyAffBtn" style="background:#dcfce7;color:#15803d;white-space:nowrap">🔗 Copy Link</button>
       </div>
     </div>
 
@@ -400,7 +414,11 @@
     document.getElementById('dashContact').textContent = member.contact_number;
     document.getElementById('dashEmail').textContent   = member.email;
     document.getElementById('dashSince').textContent   = fmtDate(member.created_at);
-    document.getElementById('dashRefCode').textContent = member.referral_code || member.contact_number.slice(0,8).toUpperCase();
+    const code = member.referral_code || member.contact_number.slice(0,8).toUpperCase();
+    document.getElementById('dashRefCode').textContent = code;
+    const affLink = `${location.origin}/air/${code}`;
+    document.getElementById('dashAffLink').textContent = affLink;
+    document.getElementById('copyAffBtn').dataset.link = affLink;
   }
 
   async function loadTree(member) {
@@ -470,7 +488,17 @@
     navigator.clipboard?.writeText(code).then(() => {
       const btn = document.getElementById('copyRefBtn');
       btn.textContent = '✓ Copied!';
-      setTimeout(() => btn.textContent = '📋 Copy', 2000);
+      setTimeout(() => btn.textContent = '📋 Copy Code', 2000);
+    });
+  });
+
+  // Copy affiliate link
+  document.getElementById('copyAffBtn').addEventListener('click', () => {
+    const link = document.getElementById('copyAffBtn').dataset.link;
+    navigator.clipboard?.writeText(link).then(() => {
+      const btn = document.getElementById('copyAffBtn');
+      btn.textContent = '✓ Copied!';
+      setTimeout(() => btn.textContent = '🔗 Copy Link', 2000);
     });
   });
 
@@ -480,6 +508,17 @@
   // Auto-login
   const existing = getLoyaltyMember();
   if (existing && getLoyaltyToken()) { enterDashboard(existing); }
+
+  // Affiliate link — pre-fill referral code from URL (/air/:code → ?ref=CODE)
+  const _urlRef = new URLSearchParams(window.location.search).get('ref');
+  if (_urlRef && !getLoyaltyToken()) {
+    showView('registerView');
+    const _refInput = document.getElementById('regReferral');
+    _refInput.value = _urlRef.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    _refInput.readOnly = true;
+    _refInput.style.cssText += ';background:#f3f4f6;cursor:not-allowed;color:#374151;';
+    _refInput.dispatchEvent(new Event('input'));
+  }
 
   // Toggle auth views
   document.getElementById('showRegister').addEventListener('click', () => {
@@ -709,6 +748,15 @@
     document.getElementById('dashBrandName').textContent = name + ' Loyalty';
     ['loginLogo','registerLogo','forgotLogo'].forEach(id => { const el = document.getElementById(id); if (el) applyLogoToEl(el, s, 'max-height:72px;width:auto'); });
     applyLogoToEl(document.getElementById('dashLogo'), s, 'width:100%;height:100%;object-fit:contain;border-radius:8px');
+  }
+</script>
+
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('/sw.js', { scope: '/' })
+        .catch(function (err) { console.warn('[PWA] SW registration failed:', err); });
+    });
   }
 </script>
 </body>
