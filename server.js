@@ -149,6 +149,88 @@ app.delete('/api/products/:id', auth, adminOnly, ah(async (req, res) => {
   res.json({ success: true });
 }));
 
+app.post('/api/products/import', auth, adminOnly, ah(async (req, res) => {
+  const rows = req.body;
+  if (!Array.isArray(rows) || rows.length === 0) return res.status(400).json({ error: 'No data' });
+  let created = 0, updated = 0;
+  const errors = [];
+  const actor = req.user.full_name || req.user.username;
+  for (const row of rows) {
+    const { name, sku, category, cost_price, selling_price, stock, min_stock, unit } = row;
+    if (!name || cost_price == null || selling_price == null) { errors.push(`Missing required fields: ${name || '(no name)'}`); continue; }
+    const cat = (category || 'General').trim();
+    const cp = parseFloat(cost_price) || 0;
+    const sp = parseFloat(selling_price) || 0;
+    const st = parseInt(stock) || 0;
+    const ms = parseInt(min_stock) || 5;
+    const u = (unit || 'pcs').trim();
+    const s = sku?.trim() || null;
+    try {
+      if (s) {
+        const [existing] = await sql`SELECT id, stock FROM products WHERE sku = ${s}`;
+        if (existing) {
+          await sql`UPDATE products SET name=${name.trim()}, category=${cat}, cost_price=${cp}, selling_price=${sp}, stock=${st}, min_stock=${ms}, unit=${u}, updated_at=CURRENT_TIMESTAMP WHERE id=${existing.id}`;
+          await sql`INSERT INTO product_history (product_id, action, product_name, sku, category, cost_price, selling_price, stock, min_stock, unit, changed_by_name) VALUES (${existing.id}, 'updated', ${name.trim()}, ${s}, ${cat}, ${cp}, ${sp}, ${st}, ${ms}, ${u}, ${actor})`;
+          updated++;
+        } else {
+          const [r] = await sql`INSERT INTO products (name, sku, category, cost_price, selling_price, stock, min_stock, unit) VALUES (${name.trim()}, ${s}, ${cat}, ${cp}, ${sp}, ${st}, ${ms}, ${u}) RETURNING id`;
+          await sql`INSERT INTO product_history (product_id, action, product_name, sku, category, cost_price, selling_price, stock, min_stock, unit, changed_by_name) VALUES (${r.id}, 'created', ${name.trim()}, ${s}, ${cat}, ${cp}, ${sp}, ${st}, ${ms}, ${u}, ${actor})`;
+          await sql`INSERT INTO categories (name) VALUES (${cat}) ON CONFLICT DO NOTHING`;
+          created++;
+        }
+      } else {
+        const [r] = await sql`INSERT INTO products (name, sku, category, cost_price, selling_price, stock, min_stock, unit) VALUES (${name.trim()}, ${null}, ${cat}, ${cp}, ${sp}, ${st}, ${ms}, ${u}) RETURNING id`;
+        await sql`INSERT INTO product_history (product_id, action, product_name, sku, category, cost_price, selling_price, stock, min_stock, unit, changed_by_name) VALUES (${r.id}, 'created', ${name.trim()}, ${null}, ${cat}, ${cp}, ${sp}, ${st}, ${ms}, ${u}, ${actor})`;
+        await sql`INSERT INTO categories (name) VALUES (${cat}) ON CONFLICT DO NOTHING`;
+        created++;
+      }
+    } catch (e) { errors.push(`${name}: ${e.message}`); }
+  }
+  res.json({ created, updated, errors });
+}));
+
+app.post('/api/inventory/import', auth, adminOnly, ah(async (req, res) => {
+  const rows = req.body;
+  if (!Array.isArray(rows) || rows.length === 0) return res.status(400).json({ error: 'No data' });
+  let updated = 0;
+  const errors = [];
+  for (const row of rows) {
+    const { sku, name, stock, min_stock } = row;
+    if (!sku && !name) { errors.push('Row missing SKU and Name'); continue; }
+    const newStock = parseInt(stock);
+    if (isNaN(newStock) || newStock < 0) { errors.push(`Invalid stock for ${sku || name}`); continue; }
+    const [p] = sku
+      ? await sql`SELECT * FROM products WHERE sku = ${sku.trim()}`
+      : await sql`SELECT * FROM products WHERE LOWER(name) = LOWER(${name.trim()})`;
+    if (!p) { errors.push(`Not found: ${sku || name}`); continue; }
+    const ms = !isNaN(parseInt(min_stock)) ? parseInt(min_stock) : p.min_stock;
+    await sql`UPDATE products SET stock=${newStock}, min_stock=${ms}, updated_at=CURRENT_TIMESTAMP WHERE id=${p.id}`;
+    if (newStock !== p.stock) {
+      await sql`INSERT INTO inventory_logs (product_id, user_id, type, quantity, previous_stock, new_stock, notes) VALUES (${p.id}, ${req.user.id}, 'set', ${Math.abs(newStock - p.stock)}, ${p.stock}, ${newStock}, 'Bulk import')`;
+    }
+    updated++;
+  }
+  res.json({ updated, errors });
+}));
+
+app.post('/api/categories/import', auth, adminOnly, ah(async (req, res) => {
+  const rows = req.body;
+  if (!Array.isArray(rows) || rows.length === 0) return res.status(400).json({ error: 'No data' });
+  let created = 0, skipped = 0;
+  const errors = [];
+  const actor = req.user.full_name || req.user.username;
+  for (const row of rows) {
+    const name = (row.name || row.category_name || '').trim();
+    if (!name) { skipped++; continue; }
+    try {
+      const [r] = await sql`INSERT INTO categories (name) VALUES (${name}) ON CONFLICT DO NOTHING RETURNING id`;
+      if (r) { await sql`INSERT INTO category_archive (category_name, action, changed_by_name) VALUES (${name}, 'created', ${actor})`; created++; }
+      else skipped++;
+    } catch (e) { errors.push(`${name}: ${e.message}`); }
+  }
+  res.json({ created, skipped, errors });
+}));
+
 // ── Inventory ──────────────────────────────────────────────────────────────────
 // Updates all linked targets so their stock = round(sourceNewStock × ratio).
 // Recursive — handles chains A→B→C automatically.

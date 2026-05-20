@@ -1452,6 +1452,143 @@ document.getElementById('referralSearch').addEventListener('input', e => {
   renderReferralList(filtered);
 });
 
+// ══════════════════════════════════════════════════════════════════════════════
+// CSV IMPORT / EXPORT
+// ══════════════════════════════════════════════════════════════════════════════
+
+function parseCSV(text) {
+  // Strip UTF-8 BOM if present
+  if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+  const lines = text.trim().split(/\r?\n/);
+  if (lines.length < 2) return [];
+  const headers = splitCSVLine(lines[0]).map(h => h.toLowerCase().replace(/\s+/g, '_'));
+  return lines.slice(1).filter(l => l.trim()).map(line => {
+    const fields = splitCSVLine(line);
+    const obj = {};
+    headers.forEach((h, i) => { obj[h] = fields[i] ?? ''; });
+    return obj;
+  });
+}
+
+function splitCSVLine(line) {
+  const fields = [];
+  let cur = '', inQuote = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') {
+      if (inQuote && line[i + 1] === '"') { cur += '"'; i++; }
+      else inQuote = !inQuote;
+    } else if (ch === ',' && !inQuote) {
+      fields.push(cur.trim());
+      cur = '';
+    } else {
+      cur += ch;
+    }
+  }
+  fields.push(cur.trim());
+  return fields;
+}
+
+function triggerFileInput(inputId) {
+  document.getElementById(inputId).value = '';
+  document.getElementById(inputId).click();
+}
+
+// ── Products ──────────────────────────────────────────────────────────────────
+document.getElementById('downloadProductsBtn').addEventListener('click', () => {
+  if (!allProducts.length) { toast.warning('No products to download'); return; }
+  const rows = [
+    ['Name', 'SKU', 'Category', 'Cost Price', 'Selling Price', 'Stock', 'Min Stock', 'Unit'],
+    ...allProducts.map(p => [p.name, p.sku || '', p.category || 'General', p.cost_price, p.selling_price, p.stock, p.min_stock, p.unit || 'pcs'])
+  ];
+  downloadCSV('products.csv', rows);
+  toast.success('Products downloaded');
+});
+
+document.getElementById('uploadProductsBtn').addEventListener('click', () => triggerFileInput('productsCsvInput'));
+
+document.getElementById('productsCsvInput').addEventListener('change', async function () {
+  const file = this.files[0];
+  if (!file) return;
+  const text = await file.text();
+  const rows = parseCSV(text);
+  if (!rows.length) { toast.error('CSV is empty or unreadable'); return; }
+  const btn = document.getElementById('uploadProductsBtn');
+  btn.disabled = true;
+  btn.textContent = 'Uploading…';
+  try {
+    const result = await api.post('/products/import', rows);
+    const msg = `${result.created} created, ${result.updated} updated` + (result.errors.length ? `, ${result.errors.length} errors` : '');
+    result.errors.length ? toast.warning(msg) : toast.success(msg);
+    await loadProducts();
+  } catch (e) { toast.error(e.message || 'Upload failed'); }
+  finally { btn.disabled = false; btn.textContent = '↑ Upload'; }
+});
+
+// ── Inventory ─────────────────────────────────────────────────────────────────
+document.getElementById('downloadInventoryBtn').addEventListener('click', () => {
+  if (!inventoryProducts.length) { toast.warning('No inventory to download'); return; }
+  const rows = [
+    ['SKU', 'Name', 'Category', 'Unit', 'Stock', 'Min Stock'],
+    ...inventoryProducts.map(p => [p.sku || '', p.name, p.category || 'General', p.unit || 'pcs', p.stock, p.min_stock])
+  ];
+  downloadCSV('inventory.csv', rows);
+  toast.success('Inventory downloaded');
+});
+
+document.getElementById('uploadInventoryBtn').addEventListener('click', () => triggerFileInput('inventoryCsvInput'));
+
+document.getElementById('inventoryCsvInput').addEventListener('change', async function () {
+  const file = this.files[0];
+  if (!file) return;
+  const text = await file.text();
+  const rows = parseCSV(text);
+  if (!rows.length) { toast.error('CSV is empty or unreadable'); return; }
+  const btn = document.getElementById('uploadInventoryBtn');
+  btn.disabled = true;
+  btn.textContent = 'Uploading…';
+  try {
+    const result = await api.post('/inventory/import', rows);
+    const msg = `${result.updated} updated` + (result.errors.length ? `, ${result.errors.length} errors` : '');
+    result.errors.length ? toast.warning(msg) : toast.success(msg);
+    await loadInventory();
+  } catch (e) { toast.error(e.message || 'Upload failed'); }
+  finally { btn.disabled = false; btn.textContent = '↑ Upload'; }
+});
+
+// ── Categories ────────────────────────────────────────────────────────────────
+document.getElementById('downloadCategoriesBtn').addEventListener('click', () => {
+  if (!allCategories.length) { toast.warning('No categories to download'); return; }
+  const rows = [
+    ['Name'],
+    ...allCategories.map(c => [c.name])
+  ];
+  downloadCSV('categories.csv', rows);
+  toast.success('Categories downloaded');
+});
+
+document.getElementById('uploadCategoriesBtn').addEventListener('click', () => triggerFileInput('categoriesCsvInput'));
+
+document.getElementById('categoriesCsvInput').addEventListener('change', async function () {
+  const file = this.files[0];
+  if (!file) return;
+  const text = await file.text();
+  const rows = parseCSV(text);
+  if (!rows.length) { toast.error('CSV is empty or unreadable'); return; }
+  const btn = document.getElementById('uploadCategoriesBtn');
+  btn.disabled = true;
+  btn.textContent = 'Uploading…';
+  try {
+    const result = await api.post('/categories/import', rows);
+    const msg = `${result.created} added, ${result.skipped} skipped` + (result.errors.length ? `, ${result.errors.length} errors` : '');
+    result.errors.length ? toast.warning(msg) : toast.success(msg);
+    await loadCategories();
+    allProducts = await api.get('/products');
+    updateCategoryFilters();
+  } catch (e) { toast.error(e.message || 'Upload failed'); }
+  finally { btn.disabled = false; btn.textContent = '↑ Upload'; }
+});
+
 // ── Bootstrap ──────────────────────────────────────────────────────────────────
 loadAppSettings().then(applyAdminBranding);
 

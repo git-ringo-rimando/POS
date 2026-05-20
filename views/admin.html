@@ -117,6 +117,9 @@
               <option value="">All Categories</option>
             </select>
             <button class="btn btn-secondary" id="refreshProductsBtn">↺</button>
+            <button class="btn btn-secondary" id="downloadProductsBtn">↓ CSV</button>
+            <button class="btn btn-secondary" id="uploadProductsBtn">↑ Upload</button>
+            <input type="file" id="productsCsvInput" accept=".csv" style="display:none" />
           </div>
           <div class="card">
             <div class="table-wrap">
@@ -161,6 +164,9 @@
               <option value="low">Low Stock</option>
               <option value="out">Out of Stock</option>
             </select>
+            <button class="btn btn-secondary" id="downloadInventoryBtn">↓ CSV</button>
+            <button class="btn btn-secondary" id="uploadInventoryBtn">↑ Upload</button>
+            <input type="file" id="inventoryCsvInput" accept=".csv" style="display:none" />
           </div>
           <div class="card">
             <div class="table-wrap">
@@ -189,6 +195,9 @@
       <div class="section-header">
         <div><div class="section-title">Categories</div><div class="section-subtitle">Manage product categories</div></div>
         <div class="section-actions">
+          <button class="btn btn-secondary" id="downloadCategoriesBtn">↓ CSV</button>
+          <button class="btn btn-secondary" id="uploadCategoriesBtn">↑ Upload</button>
+          <input type="file" id="categoriesCsvInput" accept=".csv" style="display:none" />
           <button class="btn btn-primary" id="addCategoryBtn">+ Add Category</button>
         </div>
       </div>
