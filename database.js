@@ -159,10 +159,6 @@ async function initDB() {
   await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS points_accumulated INTEGER DEFAULT 0`;
   await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS points_distributed JSONB DEFAULT '[]'`;
 
-  // Set per-level spend ratios for referrer levels (pesos per 1 point, based on buyer's spend)
-  await sql`UPDATE loyalty_tiers SET points_earned = 250, is_active = true WHERE sort_order = 2`;
-  await sql`UPDATE loyalty_tiers SET points_earned = 500, is_active = true WHERE sort_order = 3`;
-
   await sql`ALTER TABLE loyalty_members ADD COLUMN IF NOT EXISTS referred_by_id INTEGER REFERENCES loyalty_members(id) ON DELETE SET NULL`;
   await sql`ALTER TABLE loyalty_members ADD COLUMN IF NOT EXISTS referral_code TEXT`;
   await sql`UPDATE loyalty_members SET referral_code = UPPER(RIGHT(REGEXP_REPLACE(contact_number, '[^A-Za-z0-9]', '', 'g'), 8))`;
@@ -193,6 +189,10 @@ async function initDB() {
       changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
   `;
+
+  // Set per-level spend ratios for referrer levels (pesos per 1 point, based on buyer's spend)
+  await sql`UPDATE loyalty_tiers SET points_earned = 250, is_active = true WHERE sort_order = 2`;
+  await sql`UPDATE loyalty_tiers SET points_earned = 500, is_active = true WHERE sort_order = 3`;
 
   const [{ c: tierCount }] = await sql`SELECT COUNT(*)::int as c FROM loyalty_tiers`;
   if (tierCount === 0) {

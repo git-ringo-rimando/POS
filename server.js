@@ -490,6 +490,45 @@ app.get('/api/product-history', auth, adminOnly, ah(async (req, res) => {
   res.json(await sql`SELECT * FROM product_history ORDER BY changed_at DESC LIMIT 500`);
 }));
 
+// ── PWA manifest (dynamic — uses settings logo) ────────────────────────────────
+app.get('/manifest.json', ah(async (req, res) => {
+  const rows = await sql`SELECT key, value FROM settings WHERE key = 'logo'`;
+  const logo = rows[0]?.value || null;
+  res.setHeader('Content-Type', 'application/manifest+json');
+  res.setHeader('Cache-Control', 'public, max-age=3600');
+  res.json({
+    name: 'Aling Inday',
+    short_name: 'Aling Inday',
+    description: 'Earn and track your loyalty points',
+    start_url: '/AIR.html',
+    scope: '/',
+    display: 'standalone',
+    orientation: 'portrait-primary',
+    theme_color: '#4f46e5',
+    background_color: '#1e1b4b',
+    icons: logo
+      ? [{ src: '/icons/logo', sizes: 'any', type: 'image/png', purpose: 'any maskable' }]
+      : [{ src: '/icons/icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any maskable' }]
+  });
+}));
+
+// ── PWA logo passthrough (serves settings logo or falls back to SVG icon) ──────
+app.get('/icons/logo', ah(async (req, res) => {
+  const [row] = await sql`SELECT value FROM settings WHERE key = 'logo'`;
+  const logo = row?.value;
+  if (!logo) return res.redirect('/icons/icon.svg');
+  if (logo.startsWith('data:')) {
+    const m = logo.match(/^data:([^;]+);base64,(.+)$/s);
+    if (m) {
+      const buf = Buffer.from(m[2], 'base64');
+      res.setHeader('Content-Type', m[1]);
+      res.setHeader('Cache-Control', 'public, max-age=3600');
+      return res.send(buf);
+    }
+  }
+  res.redirect(302, logo);
+}));
+
 // ── Settings ───────────────────────────────────────────────────────────────────
 app.get('/api/settings', ah(async (req, res) => {
   const rows = await sql`SELECT key, value FROM settings WHERE key IN ('business_name', 'logo', 'points_ratio')`;

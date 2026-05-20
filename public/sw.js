@@ -1,10 +1,8 @@
-const CACHE_VERSION = 'air-v1';
+const CACHE_VERSION = 'air-v2';
 const STATIC_ASSETS = [
   '/AIR.html',
   '/css/style.css',
-  '/js/common.js',
-  '/manifest.json',
-  '/icons/icon.svg'
+  '/js/common.js'
 ];
 
 const STAFF_PAGES = [
