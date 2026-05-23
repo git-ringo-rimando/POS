@@ -1,7 +1,7 @@
 const postgres = require('postgres');
 const bcrypt = require('bcryptjs');
 
-const sql = postgres(process.env.DATABASE_URL, {
+const sql = postgres(process.env.DATABASE_URL_UNPOOLED || process.env.DATABASE_URL, {
   max: 10,
   idle_timeout: 20,
   connect_timeout: 30,
