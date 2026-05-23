@@ -684,6 +684,7 @@ app.get('/api/public/settings', ah(async (req, res) => {
   const rows = await sql`SELECT key, value FROM settings WHERE key = ANY(${keys})`;
   const out = { business_name: 'Aling Inday Kamuning Branch POS', logo: null, store_hours: '', store_status: 'open', store_hours_note: '', order_form_enabled: 'true', pos_enabled: 'true', coverage_cities: '[]' };
   rows.forEach(r => { out[r.key] = r.value; });
+  out.order_form_enabled = 'true';
   res.json(out);
 }));
 
