@@ -464,6 +464,18 @@
   let _posOrder = null;
   try { _posOrder = JSON.parse(sessionStorage.getItem('_posOrder') || 'null'); } catch {}
 
+  // Prevent direct access - redirect if no order data from landing page
+  if (!_posOrder) {
+    document.querySelector('.of-body').innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:center;height:100%;width:100%;flex-direction:column;gap:14px;padding:40px;text-align:center">
+        <div style="font-size:48px">🚫</div>
+        <div style="font-size:20px;font-weight:800;color:#111827">Direct Access Not Allowed</div>
+        <div style="font-size:14px;color:#6b7280;max-width:320px">Please start your order from the home page and select your order type and details.</div>
+        <a href="/" style="margin-top:8px;color:#4f46e5;font-weight:600;font-size:14px;text-decoration:none;border:2px solid #4f46e5;padding:8px 16px;border-radius:6px;display:inline-block">← Back to Home</a>
+      </div>`;
+    throw new Error('Direct access prevented');
+  }
+
   if (_posOrder) {
     const isDelivery = _posOrder.type === 'delivery';
     const cart = document.querySelector('.of-cart');
