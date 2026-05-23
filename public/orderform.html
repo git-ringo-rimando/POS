@@ -419,6 +419,13 @@
       </div>
 
       <div class="of-field">
+        <label>Phone Number <span style="font-weight:400;opacity:.6;text-transform:none">(for loyalty lookup)</span></label>
+        <input class="form-control" id="phoneInput" type="tel"
+          placeholder="e.g. 09123456789" />
+        <div id="memberStatus" style="font-size:12px;margin-top:4px;min-height:18px"></div>
+      </div>
+
+      <div class="of-field">
         <label>Customer / Notes <span style="font-weight:400;opacity:.6;text-transform:none">(optional)</span></label>
         <input class="form-control" id="notesInput" type="text"
           placeholder="e.g. Juan dela Cruz — table 3" />
@@ -494,6 +501,41 @@
   let cart = [];            // [{ product, qty }]
   let activeCategory = 'all';
   let affiliateMemberId = null;  // loyalty_member_id from ?ref= param
+  let loyaltyMember = null;  // current loyalty member from phone lookup
+
+  // ── Phone number lookup ─────────────────────────────────────
+  async function lookupLoyaltyMember(phone) {
+    const statusEl = document.getElementById('memberStatus');
+    if (!phone || phone.trim().length < 10) {
+      statusEl.innerHTML = '';
+      loyaltyMember = null;
+      return;
+    }
+
+    statusEl.innerHTML = '<span style="color:#6b7280">🔍 Looking up...</span>';
+    try {
+      const res = await fetch(`/api/loyalty/lookup-phone?phone=${encodeURIComponent(phone)}`);
+      const data = await res.json();
+      if (data.id) {
+        loyaltyMember = data;
+        const pts = data.loyalty_points || 0;
+        statusEl.innerHTML = `<span style="color:#059669">✓ ${data.full_name} • ${pts} pts</span>`;
+      } else {
+        loyaltyMember = null;
+        statusEl.innerHTML = '<span style="color:#6b7280">No loyalty member found</span>';
+      }
+    } catch (e) {
+      loyaltyMember = null;
+      statusEl.innerHTML = '<span style="color:#6b7280">Lookup failed</span>';
+    }
+  }
+
+  // Debounce phone lookup
+  let phoneTimeout;
+  document.getElementById('phoneInput').addEventListener('input', function() {
+    clearTimeout(phoneTimeout);
+    phoneTimeout = setTimeout(() => lookupLoyaltyMember(this.value), 500);
+  });
 
   // ── Affiliate / referral init ───────────────────────────────
   async function initReferral() {
@@ -664,6 +706,7 @@
     if (!cart.length) return;
     const payment_method = document.getElementById('paymentMethod').value;
     const notes = document.getElementById('notesInput').value.trim();
+    const phone = document.getElementById('phoneInput').value.trim();
 
     const btn = document.getElementById('submitBtn');
     btn.disabled = true;
@@ -678,6 +721,8 @@
           payment_method,
           notes: [_orderDate ? `Order date: ${_orderDate}` : '', notes].filter(Boolean).join(' | ') || undefined,
           order_type: _posOrder?.type || 'pickup',
+          phone: phone || undefined,
+          ...(loyaltyMember?.id ? { loyalty_member_id: loyaltyMember.id } : {}),
           ...(affiliateMemberId ? { loyalty_member_id: affiliateMemberId } : {})
         })
       }).then(async r => {

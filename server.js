@@ -877,6 +877,14 @@ app.get('/AIR-admin', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'AIR-admin.html'));
 });
 
+app.get('/api/loyalty/lookup-phone', ah(async (req, res) => {
+  const phone = req.query.phone?.trim();
+  if (!phone) return res.status(400).json({ error: 'Phone number required' });
+  const [m] = await sql`SELECT id, full_name, points FROM loyalty_members WHERE contact_number = ${phone}`;
+  if (!m) return res.status(404).json({ error: 'Not found' });
+  res.json({ id: m.id, full_name: m.full_name, loyalty_points: m.points || 0 });
+}));
+
 app.get('/api/loyalty/referral-check', ah(async (req, res) => {
   const code = req.query.code?.trim().toUpperCase();
   if (!code) return res.status(400).json({ error: 'Referral code required' });
