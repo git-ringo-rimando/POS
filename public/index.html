@@ -384,6 +384,36 @@
   </div>
 </div>
 
+<!-- ══ Member Found Modal (Delivery) ════════════════════════════════ -->
+<div class="modal-bg" id="delMemberFoundModal" style="display:none">
+  <div class="confirm-card" style="max-width:380px;text-align:center">
+    <div style="font-size:48px;margin-bottom:16px">👋</div>
+    <div class="confirm-title">Welcome Back!</div>
+    <div class="confirm-sub" style="margin-bottom:20px">We found your loyalty account</div>
+    <div style="background:#f0fdf4;border:2px solid #86efac;border-radius:12px;padding:16px;margin-bottom:20px">
+      <div style="font-size:18px;font-weight:700;color:#111827" id="delMemberName">Juan Dela Cruz</div>
+      <div style="font-size:14px;color:#6b7280;margin-top:8px">Loyalty Points: <span id="delMemberPoints" style="font-weight:700;color:#4f46e5">0</span></div>
+    </div>
+    <button class="cta-btn" id="delMemberContinueBtn" style="margin-bottom:12px">✓ Continue to Order</button>
+    <button class="btn-back" id="delMemberSkipBtn">← Use Different Account</button>
+  </div>
+</div>
+
+<!-- ══ Member Found Modal (Pickup) ════════════════════════════════ -->
+<div class="modal-bg" id="pkupMemberFoundModal" style="display:none">
+  <div class="confirm-card" style="max-width:380px;text-align:center">
+    <div style="font-size:48px;margin-bottom:16px">👋</div>
+    <div class="confirm-title">Welcome Back!</div>
+    <div class="confirm-sub" style="margin-bottom:20px">We found your loyalty account</div>
+    <div style="background:#f0fdf4;border:2px solid #86efac;border-radius:12px;padding:16px;margin-bottom:20px">
+      <div style="font-size:18px;font-weight:700;color:#111827" id="pkupMemberName">Juan Dela Cruz</div>
+      <div style="font-size:14px;color:#6b7280;margin-top:8px">Loyalty Points: <span id="pkupMemberPoints" style="font-weight:700;color:#4f46e5">0</span></div>
+    </div>
+    <button class="cta-btn" id="pkupMemberContinueBtn" style="margin-bottom:12px">✓ Continue to Order</button>
+    <button class="btn-back" id="pkupMemberSkipBtn">← Use Different Account</button>
+  </div>
+</div>
+
 <script src="/js/common.js"></script>
 <script>
 // ── State ──────────────────────────────────────────────────────────────────────
@@ -563,7 +593,7 @@ document.getElementById('cfYes').addEventListener('click', async () => {
   }
 
   // Store pickup order details
-  const pickupOrderData = {
+  _pickupOrderData = {
     type: 'pickup',
     date: _selectedDate,
     dateFmt: fmtDateLong(_selectedDate),
@@ -574,23 +604,35 @@ document.getElementById('cfYes').addEventListener('click', async () => {
   };
 
   // Check if phone is in loyalty database
+  console.log('🔍 Pickup: Checking loyalty database for phone:', contact1);
   try {
     const res = await fetch(`/api/loyalty/lookup-phone?phone=${encodeURIComponent(contact1)}`);
+    console.log('📊 API Response Status:', res.status);
     const data = await res.json();
+    console.log('📦 API Response Data:', data);
 
-    if (data.id) {
-      // Member found - greeting will show on order form
-      pickupOrderData.loyaltyMemberId = data.id;
-    }
-
-    // Proceed to order form (greeting modal will show on order form if member found)
     document.getElementById('confirmModal').style.display = 'none';
-    sessionStorage.setItem('_posOrder', JSON.stringify(pickupOrderData));
-    window.location.href = '/orderform.html';
+
+    if (res.ok && data.id) {
+      console.log('✅ Member FOUND:', data.full_name, 'ID:', data.id);
+      // Member found - show welcome modal
+      _pickupOrderData.loyaltyMemberId = data.id;
+      document.getElementById('pkupMemberName').textContent = data.full_name;
+      document.getElementById('pkupMemberPoints').textContent = data.loyalty_points || 0;
+      document.getElementById('pkupMemberFoundModal').style.display = 'flex';
+      console.log('📣 Showing member found modal');
+    } else {
+      console.log('❌ Member NOT FOUND - proceeding to order form');
+      // Member not found - proceed to order form
+      sessionStorage.setItem('_posOrder', JSON.stringify(_pickupOrderData));
+      console.log('🚀 Redirecting to orderform.html');
+      window.location.href = '/orderform.html';
+    }
   } catch (e) {
+    console.error('🔴 Error during loyalty lookup:', e);
     // On error, proceed anyway
     document.getElementById('confirmModal').style.display = 'none';
-    sessionStorage.setItem('_posOrder', JSON.stringify(pickupOrderData));
+    sessionStorage.setItem('_posOrder', JSON.stringify(_pickupOrderData));
     window.location.href = '/orderform.html';
   }
 });
@@ -729,7 +771,9 @@ function clearBrgy() {
 
 // ── Delivery Proceed ───────────────────────────────────────────────────────────
 let _delOrderData = null;
-document.getElementById('delProceedBtn').addEventListener('click', () => {
+let _pickupOrderData = null;
+document.getElementById('delProceedBtn').addEventListener('click', async () => {
+  console.log('💡 Delivery Proceed button clicked!');
   const customerName = document.getElementById('delCustomerName').value.trim();
   const addr1        = document.getElementById('delAddr1').value.trim();
   const addr2        = document.getElementById('delAddr2').value.trim();
@@ -737,6 +781,8 @@ document.getElementById('delProceedBtn').addEventListener('click', () => {
   const contact2     = document.getElementById('contact2').value.trim();
   const errEl        = document.getElementById('delFormError');
   errEl.style.display = 'none';
+
+  console.log('📋 Form data:', { customerName, addr1, addr2, contact1, contact2, city: _selectedCity?.name, brgy: _selectedBrgy });
 
   const errs = [];
   if (!customerName)   errs.push('Customer name is required.');
@@ -746,7 +792,13 @@ document.getElementById('delProceedBtn').addEventListener('click', () => {
   if (!contact1)       errs.push('Primary contact is required.');
   else if (contact1.replace(/\D/g,'').length < 7) errs.push('Primary contact must have at least 7 digits.');
 
-  if (errs.length) { errEl.textContent = errs[0]; errEl.style.display = ''; return; }
+  if (errs.length) {
+    console.warn('⚠️ Validation error:', errs[0]);
+    errEl.textContent = errs[0];
+    errEl.style.display = '';
+    return;
+  }
+  console.log('✅ All validation passed');
 
   _delOrderData = {
     type:         'delivery',
@@ -761,11 +813,43 @@ document.getElementById('delProceedBtn').addEventListener('click', () => {
     country:      'Philippines'
   };
 
-  document.getElementById('delCfDate').textContent = _delOrderData.dateFmt;
-  document.getElementById('delCfTime').textContent = _delOrderData.time;
-  document.getElementById('delCfName').textContent = customerName;
-  document.getElementById('delCfAddr').textContent = addr1 + (addr2 ? ', ' + addr2 : '') + ', ' + _selectedBrgy + ', ' + _selectedCity.name;
-  document.getElementById('delConfirmModal').style.display = 'flex';
+  // Check loyalty database immediately
+  console.log('🔍 Delivery: Checking loyalty database for phone:', contact1);
+  try {
+    const phoneEncoded = encodeURIComponent(contact1);
+    const url = `/api/loyalty/lookup-phone?phone=${phoneEncoded}`;
+    console.log('📡 API URL:', url);
+    const res = await fetch(url);
+    console.log('📊 API Response Status:', res.status);
+    const data = await res.json();
+    console.log('📦 API Response Data:', data);
+
+    if (res.ok && data.id) {
+      console.log('✅ Member FOUND:', data.full_name, 'ID:', data.id);
+      // Member found - show welcome modal
+      _delOrderData.loyaltyMemberId = data.id;
+      document.getElementById('delMemberName').textContent = data.full_name;
+      document.getElementById('delMemberPoints').textContent = data.loyalty_points || 0;
+      document.getElementById('delMemberFoundModal').style.display = 'flex';
+      console.log('📣 Showing member found modal');
+    } else {
+      console.log('❌ Member NOT FOUND - showing confirmation modal');
+      // Member not found - show confirmation modal, then registration prompt
+      document.getElementById('delCfDate').textContent = _delOrderData.dateFmt;
+      document.getElementById('delCfTime').textContent = _delOrderData.time;
+      document.getElementById('delCfName').textContent = customerName;
+      document.getElementById('delCfAddr').textContent = addr1 + (addr2 ? ', ' + addr2 : '') + ', ' + _selectedBrgy + ', ' + _selectedCity.name;
+      document.getElementById('delConfirmModal').style.display = 'flex';
+    }
+  } catch (e) {
+    console.error('🔴 Error during loyalty lookup:', e);
+    // On error, show confirmation modal anyway
+    document.getElementById('delCfDate').textContent = _delOrderData.dateFmt;
+    document.getElementById('delCfTime').textContent = _delOrderData.time;
+    document.getElementById('delCfName').textContent = customerName;
+    document.getElementById('delCfAddr').textContent = addr1 + (addr2 ? ', ' + addr2 : '') + ', ' + _selectedBrgy + ', ' + _selectedCity.name;
+    document.getElementById('delConfirmModal').style.display = 'flex';
+  }
 });
 
 document.getElementById('delCfNo').addEventListener('click', () => {
@@ -773,31 +857,12 @@ document.getElementById('delCfNo').addEventListener('click', () => {
 });
 
 document.getElementById('delCfYes').addEventListener('click', async () => {
-  // Check if phone is in loyalty database
-  const phone = _delOrderData.contact1;
-  try {
-    const res = await fetch(`/api/loyalty/lookup-phone?phone=${encodeURIComponent(phone)}`);
-    const data = await res.json();
-
-    if (data.id) {
-      // Member found, proceed to order form
-      document.getElementById('delConfirmModal').style.display = 'none';
-      sessionStorage.setItem('_posOrder', JSON.stringify(_delOrderData));
-      window.location.href = '/orderform.html';
-    } else {
-      // Member not found, show registration prompt
-      document.getElementById('delConfirmModal').style.display = 'none';
-      document.getElementById('delRegisterModal').style.display = 'flex';
-      document.getElementById('regStep1').classList.remove('hidden');
-      document.getElementById('regStep2').classList.add('hidden');
-      document.getElementById('delRegisterError').classList.add('hidden');
-    }
-  } catch (e) {
-    // On error, proceed anyway
-    document.getElementById('delConfirmModal').style.display = 'none';
-    sessionStorage.setItem('_posOrder', JSON.stringify(_delOrderData));
-    window.location.href = '/orderform.html';
-  }
+  // If we reach here, member was not found, show registration modal
+  document.getElementById('delConfirmModal').style.display = 'none';
+  document.getElementById('delRegisterModal').style.display = 'flex';
+  document.getElementById('regStep1').classList.remove('hidden');
+  document.getElementById('regStep2').classList.add('hidden');
+  document.getElementById('delRegisterError').classList.add('hidden');
 });
 
 // ── Delivery Registration Modal Handlers ─────────────────────────────────────
@@ -818,6 +883,46 @@ document.getElementById('regBackBtn').addEventListener('click', () => {
   document.getElementById('regStep1').classList.remove('hidden');
   document.getElementById('regStep2').classList.add('hidden');
   document.getElementById('delRegisterError').classList.add('hidden');
+});
+
+// Member Found Modal Handlers
+document.getElementById('delMemberContinueBtn').addEventListener('click', () => {
+  console.log('✅ Member confirmed, proceeding to order form');
+  document.getElementById('delMemberFoundModal').style.display = 'none';
+  sessionStorage.setItem('_posOrder', JSON.stringify(_delOrderData));
+  window.location.href = '/orderform.html';
+});
+
+document.getElementById('delMemberSkipBtn').addEventListener('click', () => {
+  console.log('⏭️ User skipped member account, showing confirmation modal');
+  document.getElementById('delMemberFoundModal').style.display = 'none';
+  // Remove loyaltyMemberId to prevent greeting modal on order form
+  delete _delOrderData.loyaltyMemberId;
+  // Show confirmation modal for non-member flow
+  document.getElementById('delCfDate').textContent = _delOrderData.dateFmt;
+  document.getElementById('delCfTime').textContent = _delOrderData.time;
+  document.getElementById('delCfName').textContent = _delOrderData.customerName;
+  document.getElementById('delCfAddr').textContent = _delOrderData.addr1 + (_delOrderData.addr2 ? ', ' + _delOrderData.addr2 : '') + ', ' + _delOrderData.brgy + ', ' + _delOrderData.city;
+  document.getElementById('delConfirmModal').style.display = 'flex';
+});
+
+// Pickup Member Found Modal Handlers
+document.getElementById('pkupMemberContinueBtn').addEventListener('click', () => {
+  console.log('✅ Pickup member confirmed, proceeding to order form');
+  document.getElementById('pkupMemberFoundModal').style.display = 'none';
+  sessionStorage.setItem('_posOrder', JSON.stringify(_pickupOrderData));
+  console.log('🚀 Redirecting to orderform.html');
+  window.location.href = '/orderform.html';
+});
+
+document.getElementById('pkupMemberSkipBtn').addEventListener('click', () => {
+  console.log('⏭️ Pickup: User skipped member account, proceeding anyway');
+  document.getElementById('pkupMemberFoundModal').style.display = 'none';
+  // Remove loyaltyMemberId
+  delete _pickupOrderData.loyaltyMemberId;
+  sessionStorage.setItem('_posOrder', JSON.stringify(_pickupOrderData));
+  console.log('🚀 Redirecting to orderform.html');
+  window.location.href = '/orderform.html';
 });
 
 // Auto-generate referral code if blank
