@@ -4,6 +4,14 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Aling Inday Kamuning</title>
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#4f46e5" />
+  <meta name="description" content="Fast and easy online ordering with loyalty rewards program" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Aling Inday" />
+  <link rel="apple-touch-icon" href="/icons/logo" />
+  <meta name="mobile-web-app-capable" content="yes" />
   <link rel="stylesheet" href="/css/style.css" />
   <style>
     *, *::before, *::after { box-sizing: border-box; }
@@ -709,6 +717,11 @@ fetch('/api/public/settings').then(r => r.json()).then(s => {
 document.getElementById('ackCheck').addEventListener('change', function() {
   if (this.checked && !document.getElementById('dateBtns').children.length) buildDatePicker();
 });
+
+// Register PWA service worker
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(err => console.log('SW registration failed:', err));
+}
 </script>
 </body>
 </html>

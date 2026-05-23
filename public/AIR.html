@@ -786,11 +786,9 @@
 </script>
 
 <script>
+  // Register PWA service worker
   if ('serviceWorker' in navigator) {
-    window.addEventListener('load', function () {
-      navigator.serviceWorker.register('/sw.js', { scope: '/' })
-        .catch(function (err) { console.warn('[PWA] SW registration failed:', err); });
-    });
+    navigator.serviceWorker.register('/sw.js').catch(err => console.log('SW registration failed:', err));
   }
 </script>
 </body>

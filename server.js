@@ -600,18 +600,53 @@ app.get('/manifest.json', ah(async (req, res) => {
   res.setHeader('Content-Type', 'application/manifest+json');
   res.setHeader('Cache-Control', 'public, max-age=3600');
   res.json({
-    name: 'Aling Inday',
+    name: 'Loyalty Rewards & Order Management',
     short_name: 'Aling Inday',
-    description: 'Earn and track your loyalty points',
+    description: 'Complete loyalty rewards program with integrated order management',
     start_url: '/AIR.html',
     scope: '/',
     display: 'standalone',
     orientation: 'portrait-primary',
     theme_color: '#4f46e5',
-    background_color: '#1e1b4b',
+    background_color: '#ffffff',
     icons: logo
-      ? [{ src: '/icons/logo', sizes: 'any', type: 'image/png', purpose: 'any maskable' }]
-      : [{ src: '/icons/icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any maskable' }]
+      ? [
+          { src: '/icons/logo', sizes: '192x192', type: 'image/png', purpose: 'any' },
+          { src: '/icons/logo', sizes: '512x512', type: 'image/png', purpose: 'any' },
+          { src: '/icons/logo', sizes: '192x192', type: 'image/png', purpose: 'maskable' }
+        ]
+      : [{ src: '/icons/icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any maskable' }],
+    categories: ['shopping', 'lifestyle'],
+    shortcuts: [
+      {
+        name: 'Order Now',
+        short_name: 'Order',
+        description: 'Quick access to place a new order',
+        url: '/?action=order',
+        icons: logo
+          ? [{ src: '/icons/logo', sizes: '192x192', type: 'image/png' }]
+          : [{ src: '/icons/icon.svg', sizes: 'any', type: 'image/svg+xml' }]
+      },
+      {
+        name: 'My Rewards',
+        short_name: 'Rewards',
+        description: 'Check your loyalty points and rewards',
+        url: '/AIR.html',
+        icons: logo
+          ? [{ src: '/icons/logo', sizes: '192x192', type: 'image/png' }]
+          : [{ src: '/icons/icon.svg', sizes: 'any', type: 'image/svg+xml' }]
+      }
+    ],
+    share_target: {
+      action: '/',
+      method: 'POST',
+      enctype: 'multipart/form-data',
+      params: {
+        title: 'title',
+        text: 'text',
+        url: 'url'
+      }
+    }
   });
 }));
 

@@ -1,8 +1,11 @@
-const CACHE_VERSION = 'air-v2';
+const CACHE_VERSION = 'pwa-v3';
 const STATIC_ASSETS = [
   '/AIR.html',
+  '/orderform.html',
+  '/index.html',
   '/css/style.css',
-  '/js/common.js'
+  '/js/common.js',
+  '/manifest.json'
 ];
 
 const STAFF_PAGES = [
