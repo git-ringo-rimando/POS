@@ -539,6 +539,18 @@
 
   // ── Affiliate / referral init ───────────────────────────────
   async function initReferral() {
+    // Check if this is a newly registered member from delivery registration
+    const newMemberId = sessionStorage.getItem('_newLoyaltyMemberId');
+    if (newMemberId) {
+      loyaltyMember = { id: parseInt(newMemberId) };
+      sessionStorage.removeItem('_newLoyaltyMemberId');
+      document.getElementById('phoneInput').value = _posOrder?.contact1 || '';
+      if (_posOrder?.customerName) {
+        document.getElementById('memberStatus').innerHTML = `<span style="color:#059669">✓ New account created for ${_posOrder.customerName}</span>`;
+      }
+      return;
+    }
+
     const ref = new URLSearchParams(location.search).get('ref');
     if (!ref) return;
     try {

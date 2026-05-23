@@ -315,6 +315,53 @@
   </div>
 </div>
 
+<!-- ══ Delivery Loyalty Registration Modal ════════════════════════════════ -->
+<div class="modal-bg" id="delRegisterModal" style="display:none">
+  <div class="login-card" style="max-width:420px">
+    <div class="login-logo">
+      <div class="logo-icon">🎁</div>
+      <h1>Join Our Loyalty Program</h1>
+    </div>
+    <div id="delRegisterError" class="login-error hidden"></div>
+
+    <!-- Step 1: Ask to join -->
+    <div id="regStep1">
+      <p style="font-size:13px;color:#6b7280;margin:0 0 16px;text-align:center">We noticed you're not in our loyalty program yet. Would you like to join and earn points on this order?</p>
+      <button class="btn btn-primary btn-block btn-lg" id="regYesBtn">✓ Yes, Create Account</button>
+      <button class="btn btn-secondary btn-block btn-lg" id="regNoBtn">✗ No, Skip for Now</button>
+    </div>
+
+    <!-- Step 2: Registration form -->
+    <div id="regStep2" class="hidden">
+      <form class="login-form" id="delRegisterForm">
+        <div class="form-group">
+          <label class="form-label">Email Address *</label>
+          <input class="form-control" id="regEmail" type="email" placeholder="your@email.com" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password *</label>
+          <input class="form-control" id="regPassword" type="password" placeholder="Min 8 characters" required minlength="8" />
+          <div class="pw-strength-bar"><div class="pw-strength-fill" id="regStrengthFill"></div></div>
+          <div class="pw-reqs">
+            <span class="pw-req" id="reg-req-len">At least 8 characters</span>
+            <span class="pw-req" id="reg-req-upper">1 uppercase letter (A–Z)</span>
+            <span class="pw-req" id="reg-req-lower">1 lowercase letter (a–z)</span>
+            <span class="pw-req" id="reg-req-num">1 number (0–9)</span>
+            <span class="pw-req" id="reg-req-special">1 special character (!@#$…)</span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Your Referral Code <span style="color:#9ca3af;font-weight:400">(8 chars, auto-assign if blank)</span></label>
+          <input class="form-control" id="regMyCode" type="text" placeholder="e.g. CUST0001" maxlength="8" style="text-transform:uppercase;letter-spacing:2px;font-weight:700" />
+          <div class="ref-status" id="myCodeStatus"></div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block btn-lg" id="regCreateBtn">Create & Proceed</button>
+      </form>
+      <button class="link-btn" id="regBackBtn" style="display:block;margin-top:12px;text-align:center;width:100%;font-size:13px;color:#6b7280">← Back</button>
+    </div>
+  </div>
+</div>
+
 <script src="/js/common.js"></script>
 <script>
 // ── State ──────────────────────────────────────────────────────────────────────
@@ -656,10 +703,173 @@ document.getElementById('delCfNo').addEventListener('click', () => {
   document.getElementById('delConfirmModal').style.display = 'none';
 });
 
-document.getElementById('delCfYes').addEventListener('click', () => {
-  document.getElementById('delConfirmModal').style.display = 'none';
+document.getElementById('delCfYes').addEventListener('click', async () => {
+  // Check if phone is in loyalty database
+  const phone = _delOrderData.contact1;
+  try {
+    const res = await fetch(`/api/loyalty/lookup-phone?phone=${encodeURIComponent(phone)}`);
+    const data = await res.json();
+
+    if (data.id) {
+      // Member found, proceed to order form
+      document.getElementById('delConfirmModal').style.display = 'none';
+      sessionStorage.setItem('_posOrder', JSON.stringify(_delOrderData));
+      window.location.href = '/orderform.html';
+    } else {
+      // Member not found, show registration prompt
+      document.getElementById('delConfirmModal').style.display = 'none';
+      document.getElementById('delRegisterModal').style.display = 'flex';
+      document.getElementById('regStep1').classList.remove('hidden');
+      document.getElementById('regStep2').classList.add('hidden');
+      document.getElementById('delRegisterError').classList.add('hidden');
+    }
+  } catch (e) {
+    // On error, proceed anyway
+    document.getElementById('delConfirmModal').style.display = 'none';
+    sessionStorage.setItem('_posOrder', JSON.stringify(_delOrderData));
+    window.location.href = '/orderform.html';
+  }
+});
+
+// ── Delivery Registration Modal Handlers ─────────────────────────────────────
+document.getElementById('regYesBtn').addEventListener('click', () => {
+  document.getElementById('regStep1').classList.add('hidden');
+  document.getElementById('regStep2').classList.remove('hidden');
+  document.getElementById('regEmail').focus();
+});
+
+document.getElementById('regNoBtn').addEventListener('click', () => {
+  // Skip registration, proceed to order form
+  document.getElementById('delRegisterModal').style.display = 'none';
   sessionStorage.setItem('_posOrder', JSON.stringify(_delOrderData));
   window.location.href = '/orderform.html';
+});
+
+document.getElementById('regBackBtn').addEventListener('click', () => {
+  document.getElementById('regStep1').classList.remove('hidden');
+  document.getElementById('regStep2').classList.add('hidden');
+  document.getElementById('delRegisterError').classList.add('hidden');
+});
+
+// Auto-generate referral code if blank
+function generateAutoRefCode() {
+  const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let code = '';
+  for (let i = 0; i < 8; i++) code += letters[Math.floor(Math.random() * letters.length)];
+  return code;
+}
+
+// Password strength validator
+function validatePwStrength(pw) {
+  const checks = {
+    'len': pw.length >= 8,
+    'upper': /[A-Z]/.test(pw),
+    'lower': /[a-z]/.test(pw),
+    'num': /[0-9]/.test(pw),
+    'special': /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(pw)
+  };
+  const pct = Object.values(checks).filter(Boolean).length * 20;
+  document.getElementById('regStrengthFill').style.width = pct + '%';
+  document.getElementById('regStrengthFill').style.background = pct < 40 ? '#ef4444' : pct < 80 ? '#f59e0b' : '#10b981';
+
+  document.getElementById('reg-req-len').classList.toggle('met', checks.len);
+  document.getElementById('reg-req-upper').classList.toggle('met', checks.upper);
+  document.getElementById('reg-req-lower').classList.toggle('met', checks.lower);
+  document.getElementById('reg-req-num').classList.toggle('met', checks.num);
+  document.getElementById('reg-req-special').classList.toggle('met', checks.special);
+  return Object.values(checks).every(Boolean);
+}
+
+document.getElementById('regPassword').addEventListener('input', function() {
+  validatePwStrength(this.value);
+});
+
+// Referral code availability check
+let codeCheckTimeout;
+document.getElementById('regMyCode').addEventListener('input', function() {
+  if (!this.value.trim()) {
+    document.getElementById('myCodeStatus').textContent = '';
+    return;
+  }
+  clearTimeout(codeCheckTimeout);
+  document.getElementById('myCodeStatus').textContent = '🔍 Checking…';
+  codeCheckTimeout = setTimeout(async () => {
+    try {
+      const res = await fetch(`/api/loyalty/check-code?code=${encodeURIComponent(this.value.toUpperCase())}`);
+      const data = await res.json();
+      if (data.available) {
+        document.getElementById('myCodeStatus').textContent = '✓ Available';
+        document.getElementById('myCodeStatus').style.color = '#10b981';
+      } else {
+        document.getElementById('myCodeStatus').textContent = '✗ ' + (data.error || 'Not available');
+        document.getElementById('myCodeStatus').style.color = '#ef4444';
+      }
+    } catch (e) {
+      document.getElementById('myCodeStatus').textContent = 'Check failed';
+      document.getElementById('myCodeStatus').style.color = '#6b7280';
+    }
+  }, 500);
+});
+
+// Registration form submission
+document.getElementById('delRegisterForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const email = document.getElementById('regEmail').value.trim();
+  const password = document.getElementById('regPassword').value;
+  let myCode = document.getElementById('regMyCode').value.trim().toUpperCase();
+  const errEl = document.getElementById('delRegisterError');
+  const btn = document.getElementById('regCreateBtn');
+
+  // Validate password strength
+  if (!validatePwStrength(password)) {
+    errEl.textContent = 'Password does not meet requirements';
+    errEl.classList.remove('hidden');
+    return;
+  }
+
+  // Auto-generate code if blank
+  if (!myCode) {
+    myCode = generateAutoRefCode();
+    document.getElementById('regMyCode').value = myCode;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Creating account…';
+  errEl.classList.add('hidden');
+
+  try {
+    const res = await fetch('/api/loyalty/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        full_name: _delOrderData.customerName,
+        contact_number: _delOrderData.contact1,
+        email,
+        password,
+        my_code: myCode
+      })
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      errEl.textContent = data.error || 'Registration failed';
+      errEl.classList.remove('hidden');
+      btn.disabled = false;
+      btn.textContent = 'Create & Proceed';
+      return;
+    }
+
+    // Registration successful, proceed to order form
+    document.getElementById('delRegisterModal').style.display = 'none';
+    sessionStorage.setItem('_posOrder', JSON.stringify(_delOrderData));
+    // Store the new member ID for use in order
+    sessionStorage.setItem('_newLoyaltyMemberId', data.member.id);
+    window.location.href = '/orderform.html';
+  } catch (e) {
+    errEl.textContent = 'Network error: ' + e.message;
+    errEl.classList.remove('hidden');
+    btn.disabled = false;
+    btn.textContent = 'Create & Proceed';
+  }
 });
 
 // ── Acknowledgement → date ─────────────────────────────────────────────────────
