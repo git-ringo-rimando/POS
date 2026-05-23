@@ -419,6 +419,12 @@
       </div>
 
       <div class="of-field">
+        <label>Customer Name <span style="font-weight:400;opacity:.6;text-transform:none">(from delivery details)</span></label>
+        <input class="form-control" id="customerName" type="text" readonly
+          placeholder="Auto-filled from delivery details" style="background:#f9fafb;color:#9ca3af" />
+      </div>
+
+      <div class="of-field">
         <label>Phone Number <span style="font-weight:400;opacity:.6;text-transform:none">(for loyalty lookup)</span></label>
         <input class="form-control" id="phoneInput" type="tel"
           placeholder="e.g. 09123456789" />
@@ -426,9 +432,15 @@
       </div>
 
       <div class="of-field">
+        <label>Secondary Contact <span style="font-weight:400;opacity:.6;text-transform:none">(optional)</span></label>
+        <input class="form-control" id="secondaryPhone" type="tel" readonly
+          placeholder="Auto-filled from delivery details" style="background:#f9fafb;color:#9ca3af" />
+      </div>
+
+      <div class="of-field">
         <label>Customer / Notes <span style="font-weight:400;opacity:.6;text-transform:none">(optional)</span></label>
         <input class="form-control" id="notesInput" type="text"
-          placeholder="e.g. Juan dela Cruz — table 3" />
+          placeholder="e.g. Special instructions or comments" />
       </div>
 
       <button class="btn btn-primary btn-block" id="submitBtn" disabled
@@ -606,6 +618,28 @@
     url.searchParams.delete('ref');
     history.replaceState({}, '', url);
   });
+
+  // ── Pre-populate delivery order details ──────────────────────
+  function populateDeliveryDetails() {
+    if (!_posOrder) return;
+
+    // Pre-fill customer name
+    if (_posOrder.customerName) {
+      document.getElementById('customerName').value = _posOrder.customerName;
+    }
+
+    // Pre-fill phone number and trigger lookup
+    if (_posOrder.contact1) {
+      document.getElementById('phoneInput').value = _posOrder.contact1;
+      // Auto-trigger phone lookup after a short delay
+      setTimeout(() => lookupLoyaltyMember(_posOrder.contact1), 300);
+    }
+
+    // Pre-fill secondary contact
+    if (_posOrder.contact2) {
+      document.getElementById('secondaryPhone').value = _posOrder.contact2;
+    }
+  }
 
   // Close greeting modal
   document.getElementById('greetingDone').addEventListener('click', () => {
@@ -801,6 +835,7 @@
 
   initReferral();
   loadProducts();
+  populateDeliveryDetails();
 
   // Register PWA service worker
   if ('serviceWorker' in navigator) {
