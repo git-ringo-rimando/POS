@@ -219,18 +219,39 @@
 
 <!-- ══ Confirm modal (Pick Up) ══════════════════════════════════════ -->
 <div class="modal-bg" id="confirmModal" style="display:none">
-  <div class="confirm-card">
-    <div class="confirm-title">Confirm Order</div>
-    <div class="confirm-sub">Please review your order details before proceeding.</div>
-    <div class="confirm-rows">
-      <div class="confirm-row">🏪 <span>Pick Up</span></div>
-      <div class="confirm-row">📅 <span>Date: <strong id="cfDate"></strong></span></div>
-      <div class="confirm-row">🕐 <span>Time: <strong id="cfTime"></strong></span></div>
+  <div class="confirm-card" style="max-width:420px">
+    <div class="confirm-title">Pick Up Details</div>
+    <div class="confirm-sub">Please enter your details before proceeding.</div>
+
+    <div style="display:flex;flex-direction:column;gap:12px;margin:16px 0">
+      <div class="form-group">
+        <label class="form-label">Customer Name</label>
+        <input class="form-control" id="pkupCustomerName" type="text" placeholder="Full name" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Contact Number</label>
+        <input class="form-control" id="pkupContact1" type="tel" placeholder="09XXXXXXXXX" />
+        <div id="pkupMemberStatus" style="font-size:12px;margin-top:4px;color:#6b7280"></div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Alternate Contact <span style="font-weight:400;opacity:.6">(optional)</span></label>
+        <input class="form-control" id="pkupContact2" type="tel" placeholder="09XXXXXXXXX" />
+      </div>
+
+      <div class="confirm-rows" style="margin-top:8px">
+        <div class="confirm-row">🏪 <span>Pick Up</span></div>
+        <div class="confirm-row">📅 <span>Date: <strong id="cfDate"></strong></span></div>
+        <div class="confirm-row">🕐 <span>Time: <strong id="cfTime"></strong></span></div>
+      </div>
     </div>
+
     <div class="confirm-btns">
-      <button class="cta-btn" id="cfYes">✓ Yes, Proceed</button>
+      <button class="cta-btn" id="cfYes">✓ Ready to Order</button>
       <button class="btn-back" id="cfNo">← Go Back</button>
     </div>
+    <div id="cfError" style="color:#ef4444;font-size:13px;margin-top:8px;text-align:center;display:none"></div>
   </div>
 </div>
 
@@ -516,15 +537,62 @@ function openConfirmModal() {
 document.getElementById('cfNo').addEventListener('click', () => {
   document.getElementById('confirmModal').style.display = 'none';
 });
-document.getElementById('cfYes').addEventListener('click', () => {
-  document.getElementById('confirmModal').style.display = 'none';
-  sessionStorage.setItem('_posOrder', JSON.stringify({
+
+document.getElementById('cfYes').addEventListener('click', async () => {
+  const customerName = document.getElementById('pkupCustomerName').value.trim();
+  const contact1 = document.getElementById('pkupContact1').value.trim();
+  const contact2 = document.getElementById('pkupContact2').value.trim();
+  const errEl = document.getElementById('cfError');
+  errEl.style.display = 'none';
+
+  // Validate inputs
+  if (!customerName) {
+    errEl.textContent = 'Customer name is required.';
+    errEl.style.display = '';
+    return;
+  }
+  if (!contact1) {
+    errEl.textContent = 'Contact number is required.';
+    errEl.style.display = '';
+    return;
+  }
+  if (contact1.replace(/\D/g, '').length < 7) {
+    errEl.textContent = 'Contact number must have at least 7 digits.';
+    errEl.style.display = '';
+    return;
+  }
+
+  // Store pickup order details
+  const pickupOrderData = {
     type: 'pickup',
     date: _selectedDate,
     dateFmt: fmtDateLong(_selectedDate),
-    time: fmtSelectedTime()
-  }));
-  window.location.href = '/orderform.html';
+    time: fmtSelectedTime(),
+    customerName,
+    contact1,
+    contact2
+  };
+
+  // Check if phone is in loyalty database
+  try {
+    const res = await fetch(`/api/loyalty/lookup-phone?phone=${encodeURIComponent(contact1)}`);
+    const data = await res.json();
+
+    if (data.id) {
+      // Member found - greeting will show on order form
+      pickupOrderData.loyaltyMemberId = data.id;
+    }
+
+    // Proceed to order form (greeting modal will show on order form if member found)
+    document.getElementById('confirmModal').style.display = 'none';
+    sessionStorage.setItem('_posOrder', JSON.stringify(pickupOrderData));
+    window.location.href = '/orderform.html';
+  } catch (e) {
+    // On error, proceed anyway
+    document.getElementById('confirmModal').style.display = 'none';
+    sessionStorage.setItem('_posOrder', JSON.stringify(pickupOrderData));
+    window.location.href = '/orderform.html';
+  }
 });
 
 // ── Delivery modal ─────────────────────────────────────────────────────────────

@@ -619,7 +619,7 @@
     history.replaceState({}, '', url);
   });
 
-  // ── Pre-populate delivery order details ──────────────────────
+  // ── Pre-populate order details (pickup & delivery) ──────────────────────
   function populateDeliveryDetails() {
     if (!_posOrder) return;
 
@@ -631,8 +631,27 @@
     // Pre-fill phone number and trigger lookup
     if (_posOrder.contact1) {
       document.getElementById('phoneInput').value = _posOrder.contact1;
-      // Auto-trigger phone lookup after a short delay
-      setTimeout(() => lookupLoyaltyMember(_posOrder.contact1), 300);
+
+      // If loyaltyMemberId is already set (from pickup confirmation), use it and show greeting
+      if (_posOrder.loyaltyMemberId) {
+        loyaltyMember = { id: _posOrder.loyaltyMemberId };
+        // Fetch member details to show in greeting
+        fetch(`/api/loyalty/lookup-phone?phone=${encodeURIComponent(_posOrder.contact1)}`)
+          .then(r => r.json())
+          .then(data => {
+            if (data.id) {
+              const pts = data.loyalty_points || 0;
+              document.getElementById('memberStatus').innerHTML = `<span style="color:#059669">✓ ${data.full_name} • ${pts} pts</span>`;
+              document.getElementById('greetingName').textContent = data.full_name;
+              document.getElementById('greetingPoints').textContent = `You have ${pts} loyalty points!`;
+              document.getElementById('greetingModal').style.display = 'flex';
+            }
+          })
+          .catch(() => {});
+      } else {
+        // No member ID yet, trigger phone lookup
+        setTimeout(() => lookupLoyaltyMember(_posOrder.contact1), 300);
+      }
     }
 
     // Pre-fill secondary contact

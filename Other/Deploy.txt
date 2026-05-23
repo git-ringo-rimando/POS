@@ -1,0 +1,21 @@
+Deployment is live and healthy.                                                                                                                                    
+                                                                                                                                                                     
+  ---                                                                                                                                                                
+  Deploy Result                                                                                                                                                                                                                                                                                                                           
+  - URL: https://claude-pos-ten.vercel.app                                                                                                                             - Target: Production                                                                                                                                               
+  - Status: READY
+  - Commit: af3d8e5
+  - Build Duration: ~13s
+  - Functions: api/index.js (575KB) — Washington D.C. (iad1)
+
+  Your POS app is fully deployed. On the first request, initDB() will run automatically — creating all tables and seeding the default users:
+
+  ┌──────────┬────────────┬─────────┐
+  │ Username │  Password  │  Role   │
+  ├──────────┼────────────┼─────────┤
+  │ admin    │ admin123   │ Admin   │
+  ├──────────┼────────────┼─────────┤
+  │ cashier1 │ cashier123 │ Cashier │
+  └──────────┴────────────┴─────────┘
+
+  Visit https://claude-pos-ten.vercel.app to test it.

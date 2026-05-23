@@ -1,0 +1,18 @@
+5/4/2026
+
+
+● Both features are live at https://claude-pos-ten.vercel.app.                                                                                                       
+                                                                                                                                                                     
+  What was added                                                                                                                                                     
+                                                                                                                                                                       History button (per row in Inventory tab):                                                                                                                         
+  - Opens a modal showing every stock movement for that product                                                                                                        - Color-coded: green for increases, red for decreases                                                                                                              
+  - Source column distinguishes: Manual (direct adjust), Sale: ORD-xxx, Void: ORD-xxx, Linked: [product name] (cascade)                                              
+
+  Links button (per row in Inventory tab):                                                                                                                           
+  - Add a link: pick a target product + enter a ratio                                                                                                                
+  - When this product's stock changes by N (via adjust or sale), the target automatically changes by N × ratio                                                       
+  - Circular dependency check prevents A→B when B already points back to A                                                                                           
+  - set adjustments don't cascade (no meaningful delta)                                                                                                              
+  - Target stock never goes below 0 from a cascade                                                                                                                   
+                                                                                                                                                                     
+  The product_links table will be auto-created by initDB() on the next cold start — no manual migration needed.
