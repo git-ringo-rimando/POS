@@ -12,7 +12,6 @@
       <div class="login-logo">
         <div class="logo-icon" id="loginLogo">🛒</div>
         <h1 id="loginBrandName">POS System</h1>
-        <p>Point of Sale Management</p>
       </div>
       <div id="loginError" class="login-error hidden"></div>
       <form class="login-form" id="loginForm" autocomplete="on">
@@ -49,7 +48,7 @@
           password: document.getElementById('password').value
         });
         saveSession(data.token, data.user);
-        window.location.href = ['admin', 'account_manager'].includes(data.user.role) ? '/sales/pos/admin.html' : '/pos.html';
+        window.location.href = ['admin', 'account_manager'].includes(data.user.role) ? '/sales/pos/admin.html' : '/sales/pos/pos.html';
       } catch (err) {
         errEl.textContent = err.message || 'Login failed';
         errEl.classList.remove('hidden');

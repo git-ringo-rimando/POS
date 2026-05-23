@@ -4,7 +4,7 @@ const bcrypt = require('bcryptjs');
 const sql = postgres(process.env.DATABASE_URL, {
   max: 10,
   idle_timeout: 20,
-  connect_timeout: 10,
+  connect_timeout: 30,
   prepare: false,
 });
 
@@ -194,6 +194,9 @@ async function initDB() {
   await sql`UPDATE loyalty_tiers SET points_earned = 250, is_active = true WHERE sort_order = 2`;
   await sql`UPDATE loyalty_tiers SET points_earned = 500, is_active = true WHERE sort_order = 3`;
 
+  await sql`ALTER TABLE products ADD COLUMN IF NOT EXISTS online_available BOOLEAN DEFAULT TRUE`;
+  await sql`ALTER TABLE products ADD COLUMN IF NOT EXISTS pos_available    BOOLEAN DEFAULT TRUE`;
+
   const [{ c: tierCount }] = await sql`SELECT COUNT(*)::int as c FROM loyalty_tiers`;
   if (tierCount === 0) {
     await sql`
@@ -210,7 +213,13 @@ async function initDB() {
     INSERT INTO settings (key, value) VALUES
       ('business_name', 'Aling Inday Kamuning'),
       ('logo', NULL),
-      ('points_ratio', '100')
+      ('points_ratio', '100'),
+      ('store_hours', 'Monday – Sunday: 7:00 AM – 9:00 PM'),
+      ('store_status', 'open'),
+      ('store_hours_note', 'Orders placed outside store hours will be processed on the next available schedule.'),
+      ('order_form_enabled', 'true'),
+      ('pos_enabled', 'true'),
+      ('coverage_cities', '[]')
     ON CONFLICT DO NOTHING
   `;
 

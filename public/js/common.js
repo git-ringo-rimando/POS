@@ -26,6 +26,7 @@ const api = {
   get: (path) => apiFetch(path),
   post: (path, body) => apiFetch(path, { method: 'POST', body }),
   put: (path, body) => apiFetch(path, { method: 'PUT', body }),
+  patch: (path, body) => apiFetch(path, { method: 'PATCH', body }),
   delete: (path) => apiFetch(path, { method: 'DELETE' })
 };
 
@@ -41,7 +42,7 @@ function clearSession() {
 function requireAuth(role) {
   const user = getUser();
   if (!user || !getToken()) { window.location.href = '/sales/pos/admin.html'; return false; }
-  if (role && user.role !== role) { window.location.href = user.role === 'admin' ? '/sales/pos/admin.html' : '/pos.html'; return false; }
+  if (role && user.role !== role) { window.location.href = user.role === 'admin' ? '/sales/pos/admin.html' : '/sales/pos/pos.html'; return false; }
   return true;
 }
 

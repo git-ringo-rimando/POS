@@ -195,6 +195,9 @@
     <p style="text-align:center;font-size:14px;color:#6b7280;margin:0">
       New here? <button class="link-btn" id="showRegister">Create a loyalty account</button>
     </p>
+    <button onclick="window.location.href='/'" style="width:100%;padding:14px 24px;margin-top:16px;background:linear-gradient(135deg,#10b981,#059669);color:white;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 4px 12px rgba(16,185,129,.25);transition:all .2s">
+      🛒 Order Now (Skip Login)
+    </button>
   </div>
 
   <!-- ── FORGOT PASSWORD VIEW ──────────────────────────────────────────── -->
@@ -259,6 +262,9 @@
     <div style="text-align:center;margin-top:16px">
       <button class="link-btn" id="backToLogin" style="font-size:13px;color:#6b7280;font-weight:500">← Back to Sign In</button>
     </div>
+    <button onclick="window.location.href='/'" style="width:100%;padding:14px 24px;margin-top:16px;background:linear-gradient(135deg,#10b981,#059669);color:white;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 4px 12px rgba(16,185,129,.25);transition:all .2s">
+      🛒 Order Now (Skip Reset)
+    </button>
   </div>
 
   <!-- ── REGISTER VIEW ─────────────────────────────────────────────────── -->
@@ -312,6 +318,9 @@
     <p style="text-align:center;font-size:14px;color:#6b7280;margin:0">
       Already a member? <button class="link-btn" id="showLogin">Sign in</button>
     </p>
+    <button onclick="window.location.href='/'" style="width:100%;padding:14px 24px;margin-top:16px;background:linear-gradient(135deg,#10b981,#059669);color:white;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 4px 12px rgba(16,185,129,.25);transition:all .2s">
+      🛒 Order Now (Skip Registration)
+    </button>
   </div>
 </div>
 
@@ -336,6 +345,11 @@
       <div class="points-value" id="dashPoints">0</div>
       <div class="points-unit">pts</div>
     </div>
+
+    <!-- Order Now Button -->
+    <button onclick="window.location.href='/'" style="width:100%;padding:16px 24px;background:linear-gradient(135deg,#10b981,#059669);color:white;border:none;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer;box-shadow:0 4px 16px rgba(16,185,129,.3);transition:all .2s">
+      🛒 Order Now
+    </button>
 
     <!-- Profile -->
     <div class="info-card">
@@ -363,6 +377,13 @@
           <div id="dashAffLink" style="font-size:12px;color:#166534;font-weight:600;word-break:break-all">—</div>
         </div>
         <button class="copy-btn" id="copyAffBtn" style="background:#dcfce7;color:#15803d;white-space:nowrap">🔗 Copy Link</button>
+      </div>
+      <div style="margin-top:8px;display:flex;align-items:center;gap:8px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:10px 14px">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:10px;font-weight:700;color:#1d4ed8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px">🛒 Your Order Form Link</div>
+          <div id="dashOrderLink" style="font-size:12px;color:#1e40af;font-weight:600;word-break:break-all">—</div>
+        </div>
+        <button class="copy-btn" id="copyOrderBtn" style="background:#dbeafe;color:#1d4ed8;white-space:nowrap">📋 Copy Link</button>
       </div>
     </div>
 
@@ -419,6 +440,9 @@
     const affLink = `${location.origin}/air/${code}`;
     document.getElementById('dashAffLink').textContent = affLink;
     document.getElementById('copyAffBtn').dataset.link = affLink;
+    const orderLink = `${location.origin}/order/${code}`;
+    document.getElementById('dashOrderLink').textContent = orderLink;
+    document.getElementById('copyOrderBtn').dataset.link = orderLink;
   }
 
   async function loadTree(member) {
@@ -499,6 +523,16 @@
       const btn = document.getElementById('copyAffBtn');
       btn.textContent = '✓ Copied!';
       setTimeout(() => btn.textContent = '🔗 Copy Link', 2000);
+    });
+  });
+
+  // Copy order form link
+  document.getElementById('copyOrderBtn').addEventListener('click', () => {
+    const link = document.getElementById('copyOrderBtn').dataset.link;
+    navigator.clipboard?.writeText(link).then(() => {
+      const btn = document.getElementById('copyOrderBtn');
+      btn.textContent = '✓ Copied!';
+      setTimeout(() => btn.textContent = '📋 Copy Link', 2000);
     });
   });
 

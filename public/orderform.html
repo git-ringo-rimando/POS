@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Order Form</title>
+  <link rel="stylesheet" href="/css/style.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body { background: #f3f4f6; margin: 0; font-family: inherit; }
+
+    /* ── Header ─────────────────────────────────────────────── */
+    .of-header {
+      background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+      color: white;
+      padding: 0 20px;
+      height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      box-shadow: 0 2px 10px rgba(79,70,229,.35);
+    }
+    .of-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 16px;
+      font-weight: 700;
+    }
+    .of-brand-logo {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: rgba(255,255,255,.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .of-user {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+    }
+    .of-user-name { opacity: .85; }
+
+    /* ── Layout ─────────────────────────────────────────────── */
+    .of-body {
+      display: grid;
+      grid-template-columns: 1fr 360px;
+      height: calc(100vh - 52px);
+    }
+
+    /* ── Products side ──────────────────────────────────────── */
+    .of-products {
+      overflow-y: auto;
+      padding: 16px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .of-toolbar {
+      display: flex;
+      gap: 8px;
+    }
+    .of-toolbar .form-control { height: 38px; }
+
+    .of-cats {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .of-cat-btn {
+      background: white;
+      border: 1.5px solid #e5e7eb;
+      border-radius: 20px;
+      padding: 4px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #6b7280;
+      cursor: pointer;
+      transition: all .15s;
+      white-space: nowrap;
+    }
+    .of-cat-btn:hover { border-color: #4f46e5; color: #4f46e5; }
+    .of-cat-btn.active { background: #4f46e5; border-color: #4f46e5; color: white; }
+
+    .of-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
+      gap: 10px;
+    }
+
+    .of-card {
+      background: white;
+      border-radius: 12px;
+      padding: 14px;
+      border: 2px solid transparent;
+      box-shadow: 0 1px 4px rgba(0,0,0,.06);
+      cursor: pointer;
+      transition: all .15s;
+      user-select: none;
+    }
+    .of-card:hover:not(.of-card--oos) {
+      border-color: #4f46e5;
+      box-shadow: 0 4px 14px rgba(79,70,229,.15);
+      transform: translateY(-1px);
+    }
+    .of-card.of-card--incart { border-color: #4f46e5; background: #f5f3ff; }
+    .of-card.of-card--oos { opacity: .45; cursor: not-allowed; }
+
+    .of-card-name {
+      font-weight: 700;
+      font-size: 13px;
+      color: #111827;
+      margin-bottom: 2px;
+      line-height: 1.3;
+    }
+    .of-card-cat {
+      font-size: 11px;
+      color: #9ca3af;
+      margin-bottom: 8px;
+    }
+    .of-card-price {
+      font-size: 17px;
+      font-weight: 800;
+      color: #4f46e5;
+      margin-bottom: 6px;
+    }
+    .of-stock-badge {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 10px;
+      display: inline-block;
+    }
+    .of-stock-ok  { background: #d1fae5; color: #065f46; }
+    .of-stock-low { background: #fef3c7; color: #92400e; }
+    .of-stock-out { background: #fee2e2; color: #991b1b; }
+
+    /* cart-count ring on cards */
+    .of-card-ring {
+      float: right;
+      width: 22px;
+      height: 22px;
+      background: #4f46e5;
+      color: white;
+      border-radius: 50%;
+      font-size: 12px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: -2px;
+      margin-left: 4px;
+    }
+
+    /* ── Cart side ──────────────────────────────────────────── */
+    .of-cart {
+      background: white;
+      border-left: 1px solid #e5e7eb;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .of-cart-head {
+      padding: 14px 18px;
+      border-bottom: 1px solid #f3f4f6;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 700;
+      font-size: 15px;
+      flex-shrink: 0;
+    }
+    .of-cart-badge {
+      background: #4f46e5;
+      color: white;
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+    }
+
+    .of-cart-items {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px 18px;
+    }
+    .of-cart-empty {
+      text-align: center;
+      color: #9ca3af;
+      font-size: 14px;
+      padding: 40px 0;
+      line-height: 1.8;
+    }
+
+    .of-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 0;
+      border-bottom: 1px solid #f9fafb;
+    }
+    .of-item-info { flex: 1; min-width: 0; }
+    .of-item-name {
+      font-weight: 600;
+      font-size: 13px;
+      color: #111827;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .of-item-price { font-size: 11px; color: #6b7280; margin-top: 1px; }
+
+    .of-qty {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+    .of-qty-btn {
+      width: 26px;
+      height: 26px;
+      border: 1.5px solid #e5e7eb;
+      border-radius: 6px;
+      background: white;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #374151;
+      transition: all .1s;
+      flex-shrink: 0;
+    }
+    .of-qty-btn:hover { border-color: #4f46e5; color: #4f46e5; }
+    .of-qty-btn.dec:hover { border-color: #ef4444; color: #ef4444; }
+    .of-qty-val { width: 26px; text-align: center; font-weight: 700; font-size: 13px; }
+    .of-item-total { font-weight: 700; font-size: 13px; color: #111827; min-width: 58px; text-align: right; flex-shrink: 0; }
+
+    /* ── Cart footer ────────────────────────────────────────── */
+    .of-footer {
+      border-top: 1px solid #e5e7eb;
+      padding: 14px 18px 16px;
+      background: #fafafa;
+      flex-shrink: 0;
+    }
+    .of-summary-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      color: #6b7280;
+      margin-bottom: 7px;
+    }
+    .of-summary-row.grand {
+      font-size: 17px;
+      font-weight: 800;
+      color: #111827;
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 2px solid #e5e7eb;
+      margin-bottom: 12px;
+    }
+    .of-discount-input {
+      width: 90px;
+      height: 28px;
+      text-align: right;
+      padding: 4px 8px;
+      font-size: 13px;
+      border: 1.5px solid #e5e7eb;
+      border-radius: 6px;
+      outline: none;
+    }
+    .of-discount-input:focus { border-color: #4f46e5; }
+    .of-field { margin-bottom: 8px; }
+    .of-field label { font-size: 11px; font-weight: 700; color: #374151; display: block; margin-bottom: 3px; text-transform: uppercase; letter-spacing: .4px; }
+    .of-field select,
+    .of-field input[type="text"] { height: 34px; font-size: 13px; }
+
+    /* ── Affiliate banner ───────────────────────────────────── */
+    .of-affiliate {
+      margin: 0 18px 0;
+      padding: 9px 12px;
+      background: linear-gradient(135deg, #eff6ff, #f5f3ff);
+      border: 1.5px solid #c7d2fe;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 12px;
+      flex-shrink: 0;
+    }
+    .of-affiliate-icon {
+      width: 30px;
+      height: 30px;
+      background: linear-gradient(135deg, #4f46e5, #7c3aed);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+    .of-affiliate-label { font-size: 10px; font-weight: 700; color: #6366f1; text-transform: uppercase; letter-spacing: .4px; }
+    .of-affiliate-name  { font-weight: 700; color: #1e1b4b; font-size: 13px; }
+    .of-affiliate-code  { color: #6b7280; font-size: 11px; }
+    .of-affiliate-clear {
+      margin-left: auto;
+      background: none;
+      border: none;
+      color: #9ca3af;
+      cursor: pointer;
+      font-size: 16px;
+      padding: 0 2px;
+      line-height: 1;
+    }
+    .of-affiliate-clear:hover { color: #ef4444; }
+    .hidden { display: none !important; }
+
+    /* ── Responsive ─────────────────────────────────────────── */
+    @media (max-width: 820px) {
+      .of-body { grid-template-columns: 1fr; height: auto; }
+      .of-products { padding: 12px 14px; }
+      .of-cart { border-left: none; border-top: 2px solid #e5e7eb; min-height: 340px; }
+      .of-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+    }
+    @media (max-width: 480px) {
+      .of-header { padding: 0 12px; }
+      .of-brand-name { display: none; }
+      .of-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; }
+      .of-card { padding: 10px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Header ─────────────────────────────────────────────── -->
+<header class="of-header">
+  <div class="of-brand">
+    <div class="of-brand-logo" id="headerLogo">🛒</div>
+    <span class="of-brand-name" id="headerName">Order Form</span>
+  </div>
+  <div class="of-user">
+    <a href="/" style="color:rgba(255,255,255,.7);font-size:13px;text-decoration:none">← Back</a>
+  </div>
+</header>
+
+<!-- ── Main ───────────────────────────────────────────────── -->
+<div class="of-body">
+
+  <!-- Products panel -->
+  <div class="of-products">
+    <div class="of-toolbar">
+      <input class="form-control" id="searchInput" type="text" placeholder="🔍  Search products…" />
+    </div>
+    <div class="of-cats" id="catTabs">
+      <button class="of-cat-btn active" data-cat="all">All</button>
+    </div>
+    <div class="of-grid" id="productsGrid">
+      <div style="grid-column:1/-1;text-align:center;color:#9ca3af;padding:60px 0;font-size:14px">
+        Loading products…
+      </div>
+    </div>
+  </div>
+
+  <!-- Cart panel -->
+  <div class="of-cart">
+    <div class="of-cart-head">
+      🛒 Order
+      <span class="of-cart-badge" id="cartCount">0</span>
+    </div>
+
+    <!-- Affiliate banner (shown when ?ref= is in URL) -->
+    <div class="of-affiliate hidden" id="affiliateBanner">
+      <div class="of-affiliate-icon">⭐</div>
+      <div>
+        <div class="of-affiliate-label">Referred by affiliate</div>
+        <div class="of-affiliate-name" id="affiliateName">—</div>
+        <div class="of-affiliate-code" id="affiliateCode"></div>
+      </div>
+      <button class="of-affiliate-clear" id="clearAffiliateBtn" title="Remove referral">✕</button>
+    </div>
+
+    <div class="of-cart-items" id="cartItems">
+      <div class="of-cart-empty">No items yet.<br>Tap a product to add it.</div>
+    </div>
+
+    <div class="of-footer">
+      <div class="of-summary-row grand" style="margin-top:0;border-top:none;padding-top:0">
+        <span>Total</span>
+        <span id="totalVal">₱0.00</span>
+      </div>
+
+      <div class="of-field">
+        <label>Payment Method</label>
+        <select class="form-control" id="paymentMethod">
+          <option value="cash">💵 Cash</option>
+          <option value="gcash">📱 GCash</option>
+          <option value="maya">💳 Maya</option>
+          <option value="card">🏦 Card</option>
+          <option value="credit">📋 Credit</option>
+        </select>
+      </div>
+
+      <div class="of-field">
+        <label>Customer / Notes <span style="font-weight:400;opacity:.6;text-transform:none">(optional)</span></label>
+        <input class="form-control" id="notesInput" type="text"
+          placeholder="e.g. Juan dela Cruz — table 3" />
+      </div>
+
+      <button class="btn btn-primary btn-block" id="submitBtn" disabled
+        style="height:44px;font-size:15px;font-weight:700;margin-top:6px;border-radius:10px">
+        Place Order
+      </button>
+    </div>
+  </div>
+</div>
+
+<script src="/js/common.js"></script>
+<script>
+  // ── Branding + enabled check (public — no auth required) ────
+  fetch('/api/public/settings').then(r => r.json()).then(s => {
+    const name = s.business_name || 'Order Form';
+    document.title = name + ' — Order Form';
+    document.getElementById('headerName').textContent = name;
+    applyLogoToEl(document.getElementById('headerLogo'), s,
+      'width:100%;height:100%;object-fit:contain;border-radius:6px');
+
+    if (s.order_form_enabled === 'false') {
+      document.querySelector('.of-body').innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:center;height:100%;width:100%;flex-direction:column;gap:14px;padding:40px;text-align:center">
+          <div style="font-size:48px">🔴</div>
+          <div style="font-size:20px;font-weight:800;color:#111827">Order Form Unavailable</div>
+          <div style="font-size:14px;color:#6b7280;max-width:320px">Online ordering is currently disabled. Please visit us in-store or check back later.</div>
+          <a href="/" style="margin-top:8px;color:#4f46e5;font-weight:600;font-size:14px">← Back to home</a>
+        </div>`;
+    }
+  }).catch(() => {});
+
+  // ── Order details from landing page (sessionStorage) ───────
+  let _posOrder = null;
+  try { _posOrder = JSON.parse(sessionStorage.getItem('_posOrder') || 'null'); } catch {}
+
+  if (_posOrder) {
+    const isDelivery = _posOrder.type === 'delivery';
+    const cart = document.querySelector('.of-cart');
+
+    // Build summary banner
+    const banner = document.createElement('div');
+    banner.style.cssText = 'flex-shrink:0;border-bottom:1.5px solid #e5e7eb;';
+
+    if (isDelivery) {
+      banner.innerHTML = `
+        <div style="background:#eff6ff;padding:10px 18px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#1d4ed8">🛵 Delivery Order</div>
+        <div style="padding:10px 18px;display:flex;flex-direction:column;gap:5px;font-size:13px;background:#f8faff">
+          ${_posOrder.customerName ? `<div>👤 <strong>${_posOrder.customerName}</strong></div>` : ''}
+          <div>📅 <strong>${_posOrder.dateFmt}</strong> &nbsp;🕐 <strong>${_posOrder.time}</strong></div>
+          <div>📍 ${_posOrder.addr1}${_posOrder.addr2 ? ', ' + _posOrder.addr2 : ''}</div>
+          <div style="color:#6b7280">${_posOrder.brgy}, ${_posOrder.city}, ${_posOrder.country}</div>
+          <div>📞 ${_posOrder.contact1}${_posOrder.contact2 ? ' · ' + _posOrder.contact2 : ''}</div>
+        </div>`;
+    } else {
+      banner.innerHTML = `
+        <div style="background:#f0fdf4;border-bottom:1.5px solid #bbf7d0;padding:10px 18px;font-size:13px;font-weight:600;color:#166534;display:flex;gap:16px;flex-wrap:wrap">
+          <span>🏪 Pick Up</span>
+          <span>📅 ${_posOrder.dateFmt}</span>
+          <span>🕐 ${_posOrder.time}</span>
+        </div>`;
+    }
+    cart.prepend(banner);
+  }
+
+  // ── Selected order date (legacy URL param fallback) ─────────
+  const _orderDate = _posOrder?.date || new URLSearchParams(location.search).get('date');
+
+  // ── State ──────────────────────────────────────────────────
+  let allProducts = [];
+  let cart = [];            // [{ product, qty }]
+  let activeCategory = 'all';
+  let affiliateMemberId = null;  // loyalty_member_id from ?ref= param
+
+  // ── Affiliate / referral init ───────────────────────────────
+  async function initReferral() {
+    const ref = new URLSearchParams(location.search).get('ref');
+    if (!ref) return;
+    try {
+      const data = await fetch(`/api/loyalty/referral-check?code=${encodeURIComponent(ref.toUpperCase())}`).then(r => r.json());
+      if (data.id) {
+        affiliateMemberId = data.id;
+        document.getElementById('affiliateName').textContent = data.full_name;
+        document.getElementById('affiliateCode').textContent = `Code: ${ref.toUpperCase()}`;
+        document.getElementById('affiliateBanner').classList.remove('hidden');
+      }
+    } catch {}
+  }
+
+  document.getElementById('clearAffiliateBtn').addEventListener('click', () => {
+    affiliateMemberId = null;
+    document.getElementById('affiliateBanner').classList.add('hidden');
+    // strip ?ref from URL without reload
+    const url = new URL(location.href);
+    url.searchParams.delete('ref');
+    history.replaceState({}, '', url);
+  });
+
+  // ── Load products ──────────────────────────────────────────
+  async function loadProducts() {
+    try {
+      const data = await fetch('/api/public/products').then(r => r.json());
+      allProducts = data;
+      buildCategoryTabs();
+      renderProducts();
+    } catch (e) {
+      toast.error('Failed to load products: ' + e.message);
+    }
+  }
+
+  function buildCategoryTabs() {
+    const cats = [...new Set(allProducts.map(p => p.category || 'General').sort())];
+    const el = document.getElementById('catTabs');
+    el.innerHTML = [
+      `<button class="of-cat-btn active" data-cat="all">All (${allProducts.length})</button>`,
+      ...cats.map(c => {
+        const count = allProducts.filter(p => (p.category || 'General') === c).length;
+        return `<button class="of-cat-btn" data-cat="${c}">${c} (${count})</button>`;
+      })
+    ].join('');
+    el.querySelectorAll('.of-cat-btn').forEach(btn =>
+      btn.addEventListener('click', () => {
+        activeCategory = btn.dataset.cat;
+        el.querySelectorAll('.of-cat-btn').forEach(b => b.classList.toggle('active', b === btn));
+        renderProducts();
+      })
+    );
+  }
+
+  function renderProducts() {
+    const q = document.getElementById('searchInput').value.toLowerCase();
+    const grid = document.getElementById('productsGrid');
+
+    const list = allProducts.filter(p => {
+      const cat = p.category || 'General';
+      if (activeCategory !== 'all' && cat !== activeCategory) return false;
+      if (q && !p.name.toLowerCase().includes(q) && !(p.sku || '').toLowerCase().includes(q)) return false;
+      return true;
+    });
+
+    if (!list.length) {
+      grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;color:#9ca3af;padding:60px 0;font-size:14px">No products found</div>`;
+      return;
+    }
+
+    grid.innerHTML = list.map(p => {
+      const oos = p.stock === 0;
+      const cartItem = cart.find(c => c.product.id === p.id);
+      const inCart = !!cartItem;
+      return `
+        <div class="of-card${oos ? ' of-card--oos' : ''}${inCart ? ' of-card--incart' : ''}" data-id="${p.id}">
+          ${inCart ? `<div class="of-card-ring">${cartItem.qty}</div>` : ''}
+          <div class="of-card-name">${p.name}</div>
+          <div class="of-card-cat">${p.category || 'General'}</div>
+          <div class="of-card-price">${oos ? '<span style="font-size:13px;color:#9ca3af;font-weight:500">—</span>' : fmt(p.selling_price)}</div>
+          <span class="of-stock-badge ${oos ? 'of-stock-out' : 'of-stock-ok'}">${oos ? 'Not Available' : 'Available'}</span>
+        </div>`;
+    }).join('');
+
+    grid.querySelectorAll('.of-card:not(.of-card--oos)').forEach(card =>
+      card.addEventListener('click', () => addToCart(parseInt(card.dataset.id)))
+    );
+  }
+
+  // ── Cart logic ─────────────────────────────────────────────
+  function addToCart(productId) {
+    const p = allProducts.find(x => x.id === productId);
+    if (!p || p.stock === 0) return;
+    const existing = cart.find(c => c.product.id === productId);
+    if (existing) {
+      if (existing.qty >= p.stock) {
+        toast.warning(`Only ${p.stock} ${p.unit} available`);
+        return;
+      }
+      existing.qty++;
+    } else {
+      cart.push({ product: p, qty: 1 });
+    }
+    renderCart();
+    renderProducts();
+  }
+
+  function setQty(productId, qty) {
+    const p = allProducts.find(x => x.id === productId);
+    if (!p) return;
+    if (qty <= 0) {
+      cart = cart.filter(c => c.product.id !== productId);
+    } else if (qty > p.stock) {
+      toast.warning(`Only ${p.stock} ${p.unit} available`);
+      return;
+    } else {
+      const item = cart.find(c => c.product.id === productId);
+      if (item) item.qty = qty;
+    }
+    renderCart();
+    renderProducts();
+  }
+
+  function renderCart() {
+    const itemsEl  = document.getElementById('cartItems');
+    const countEl  = document.getElementById('cartCount');
+    const submitBtn = document.getElementById('submitBtn');
+    const totalItems = cart.reduce((s, c) => s + c.qty, 0);
+
+    countEl.textContent = totalItems;
+
+    if (!cart.length) {
+      itemsEl.innerHTML = `<div class="of-cart-empty">No items yet.<br>Tap a product to add it.</div>`;
+      document.getElementById('totalVal').textContent = fmt(0);
+      submitBtn.disabled = true;
+      return;
+    }
+
+    let total = 0;
+    itemsEl.innerHTML = cart.map(({ product: p, qty }) => {
+      const line = p.selling_price * qty;
+      total += line;
+      return `
+        <div class="of-item">
+          <div class="of-item-info">
+            <div class="of-item-name">${p.name}</div>
+            <div class="of-item-price">${fmt(p.selling_price)} × ${qty}</div>
+          </div>
+          <div class="of-qty">
+            <button class="of-qty-btn dec" onclick="setQty(${p.id},${qty - 1})">−</button>
+            <span class="of-qty-val">${qty}</span>
+            <button class="of-qty-btn" onclick="setQty(${p.id},${qty + 1})">+</button>
+          </div>
+          <div class="of-item-total">${fmt(line)}</div>
+        </div>`;
+    }).join('');
+
+    document.getElementById('totalVal').textContent = fmt(total);
+    submitBtn.disabled = false;
+  }
+
+  // ── Events ─────────────────────────────────────────────────
+  document.getElementById('searchInput').addEventListener('input', renderProducts);
+
+  document.getElementById('submitBtn').addEventListener('click', async () => {
+    if (!cart.length) return;
+    const payment_method = document.getElementById('paymentMethod').value;
+    const notes = document.getElementById('notesInput').value.trim();
+
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true;
+    btn.textContent = 'Placing order…';
+
+    try {
+      const result = await fetch('/api/public/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          items: cart.map(c => ({ product_id: c.product.id, quantity: c.qty })),
+          payment_method,
+          notes: [_orderDate ? `Order date: ${_orderDate}` : '', notes].filter(Boolean).join(' | ') || undefined,
+          order_type: _posOrder?.type || 'pickup',
+          ...(affiliateMemberId ? { loyalty_member_id: affiliateMemberId } : {})
+        })
+      }).then(async r => {
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error || 'Failed to place order');
+        return d;
+      });
+
+      toast.success(`✓ Order ${result.order_number} placed — Total: ${fmt(result.total)}`);
+      cart = [];
+      document.getElementById('discountInput').value = '0';
+      document.getElementById('notesInput').value = '';
+      renderCart();
+
+      // Refresh products to reflect updated stock
+      await loadProducts();
+    } catch (e) {
+      toast.error(e.message || 'Failed to place order');
+      btn.disabled = false;
+    } finally {
+      btn.textContent = 'Place Order';
+      if (!cart.length) btn.disabled = true;
+    }
+  });
+
+  initReferral();
+  loadProducts();
+</script>
+</body>
+</html>

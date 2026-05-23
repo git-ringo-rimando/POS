@@ -305,6 +305,31 @@ table { border-collapse: collapse; width: 100%; }
 .kpi-value { font-size: 24px; font-weight: 700; line-height: 1.1; }
 .kpi-sub { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
 
+/* Toggle switch */
+.toggle-wrap { position: relative; flex-shrink: 0; }
+.toggle-input { position: absolute; opacity: 0; width: 0; height: 0; }
+.toggle-track { display: inline-flex; align-items: center; width: 44px; height: 24px; background: #d1d5db; border-radius: 12px; transition: background .2s; cursor: pointer; }
+.toggle-input:checked + .toggle-track { background: #4f46e5; }
+.toggle-thumb { width: 18px; height: 18px; background: white; border-radius: 50%; margin-left: 3px; box-shadow: 0 1px 3px rgba(0,0,0,.2); transition: transform .2s; flex-shrink: 0; }
+.toggle-input:checked + .toggle-track .toggle-thumb { transform: translateX(20px); }
+
+/* Per-product availability buttons */
+.avail-btn { border: none; background: none; cursor: pointer; font-size: 15px; padding: 3px 5px; border-radius: 6px; transition: all .12s; line-height: 1; }
+.avail-btn:hover { background: #f3f4f6; transform: scale(1.15); }
+.avail-btn.avail-off { filter: grayscale(1) opacity(.3); }
+.avail-btn.avail-on  { filter: none; }
+
+/* City tag */
+.city-tag { display: inline-flex; align-items: center; gap: 4px; background: #ede9fe; color: #4c1d95; font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 20px; }
+.city-tag button { background: none; border: none; cursor: pointer; color: #7c3aed; font-size: 14px; padding: 0; line-height: 1; }
+.city-tag button:hover { color: #ef4444; }
+
+/* Dashboard range buttons */
+.dash-range-btns { display: flex; background: #f3f4f6; border-radius: 8px; padding: 3px; gap: 2px; flex-wrap: nowrap; overflow-x: auto; }
+.dash-range-btn { background: none; border: none; padding: 5px 12px; border-radius: 6px; font-size: 13px; font-weight: 500; color: #6b7280; cursor: pointer; white-space: nowrap; transition: all 0.15s; }
+.dash-range-btn:hover { color: #374151; background: rgba(0,0,0,0.05); }
+.dash-range-btn.active { background: white; color: #4f46e5; box-shadow: 0 1px 3px rgba(0,0,0,0.1); font-weight: 600; }
+
 /* Charts */
 .charts-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 20px; }
 .chart-card { background: white; border-radius: var(--radius-lg); padding: 20px; box-shadow: var(--card-shadow); }

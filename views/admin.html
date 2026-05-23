@@ -65,19 +65,26 @@
           <div class="section-subtitle" id="dashGreeting">Good morning!</div>
         </div>
         <div class="section-actions">
-          <button class="btn btn-secondary" id="dashRefresh">↺ Refresh</button>
+          <div class="dash-range-btns">
+            <button class="dash-range-btn active" data-range="today">Today</button>
+            <button class="dash-range-btn" data-range="yesterday">Yesterday</button>
+            <button class="dash-range-btn" data-range="7days">Last 7 Days</button>
+            <button class="dash-range-btn" data-range="week">This Week</button>
+            <button class="dash-range-btn" data-range="month">This Month</button>
+          </div>
+          <button class="btn btn-secondary" id="dashRefresh" title="Refresh">↺</button>
         </div>
       </div>
       <div class="section-content">
         <div class="kpi-grid" id="kpiGrid">
-          <div class="kpi-card"><div class="kpi-icon blue">💰</div><div><div class="kpi-label">Today's Revenue</div><div class="kpi-value" id="kpiRevenue">—</div><div class="kpi-sub" id="kpiOrders">— orders</div></div></div>
+          <div class="kpi-card"><div class="kpi-icon blue">💰</div><div><div class="kpi-label">Revenue</div><div class="kpi-value" id="kpiRevenue">—</div><div class="kpi-sub" id="kpiOrders">— orders</div></div></div>
           <div class="kpi-card"><div class="kpi-icon green">📈</div><div><div class="kpi-label">Gross Profit</div><div class="kpi-value" id="kpiProfit">—</div><div class="kpi-sub" id="kpiMargin">— margin</div></div></div>
           <div class="kpi-card"><div class="kpi-icon purple">📦</div><div><div class="kpi-label">Total Products</div><div class="kpi-value" id="kpiProducts">—</div><div class="kpi-sub" id="kpiLowStock">— low stock</div></div></div>
           <div class="kpi-card"><div class="kpi-icon orange">⚠️</div><div><div class="kpi-label">Low Stock Items</div><div class="kpi-value" id="kpiLowStockCount">—</div><div class="kpi-sub">Need restocking</div></div></div>
         </div>
         <div class="charts-grid">
           <div class="chart-card">
-            <div class="chart-title">Revenue — Last 30 Days</div>
+            <div class="chart-title" id="dashChartTitle">Revenue — Today</div>
             <div class="chart-container"><canvas id="revenueChart" height="200"></canvas></div>
           </div>
           <div class="chart-card">
@@ -124,7 +131,7 @@
           <div class="card">
             <div class="table-wrap">
               <table class="table" id="productsTable">
-                <thead><tr><th>Name</th><th>SKU</th><th>Category</th><th>Cost</th><th>Selling</th><th>Margin</th><th>Stock</th><th>Actions</th></tr></thead>
+                <thead><tr><th>Name</th><th>SKU</th><th>Category</th><th>Cost</th><th>Selling</th><th>Margin</th><th>Stock</th><th style="text-align:center">Availability</th><th>Actions</th></tr></thead>
                 <tbody id="productsBody"></tbody>
               </table>
             </div>
@@ -502,6 +509,56 @@
             <div style="display:flex;gap:8px;flex-wrap:wrap">
               <button class="btn btn-primary" id="saveSettingsBtn">Save Changes</button>
               <button class="btn btn-secondary" id="removeLogoBtn">Remove Logo</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Coverage -->
+        <div class="card" style="margin-top:20px">
+          <div class="card-header"><div class="card-title">📍 Delivery Coverage</div></div>
+          <div style="padding:20px;display:flex;flex-direction:column;gap:12px">
+            <div style="font-size:13px;color:#6b7280">Select the cities/municipalities you deliver to. Customers will see these on the ordering page.</div>
+            <div id="selectedCitiesTags" style="display:flex;flex-wrap:wrap;gap:6px;min-height:32px"></div>
+            <div style="position:relative">
+              <input class="form-control" id="citySearchInput" placeholder="🔍  Type to search city or municipality…" autocomplete="off" />
+              <div id="cityDropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:white;border:1.5px solid #e5e7eb;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.1);max-height:220px;overflow-y:auto;z-index:50;margin-top:4px"></div>
+            </div>
+            <div style="font-size:12px;color:#9ca3af" id="cityLoadStatus">Cities load from PSGC on first search.</div>
+            <div>
+              <button class="btn btn-primary" id="saveCoverageBtn">Save Coverage</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Store Operations -->
+        <div class="card" style="margin-top:20px">
+          <div class="card-header"><div class="card-title">🕐 Store Operations</div></div>
+          <div style="padding:20px;display:flex;flex-direction:column;gap:16px">
+            <div class="form-group" style="margin-bottom:0">
+              <label class="form-label">Store Status</label>
+              <div style="display:flex;gap:10px;margin-top:4px">
+                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:14px">
+                  <input type="radio" name="storeStatus" id="storeStatusOpen" value="open" style="accent-color:#10b981" />
+                  <span style="color:#065f46;font-weight:600">🟢 Open</span>
+                </label>
+                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:14px">
+                  <input type="radio" name="storeStatus" id="storeStatusClosed" value="closed" style="accent-color:#ef4444" />
+                  <span style="color:#991b1b;font-weight:600">🔴 Closed</span>
+                </label>
+              </div>
+            </div>
+            <div class="form-group" style="margin-bottom:0">
+              <label class="form-label">Operating Hours</label>
+              <input class="form-control" id="storeHours" placeholder="e.g. Monday – Sunday: 7:00 AM – 9:00 PM" />
+              <div class="form-hint">Displayed to customers on the order landing page.</div>
+            </div>
+            <div class="form-group" style="margin-bottom:0">
+              <label class="form-label">Hours Note <span style="font-weight:400;color:#9ca3af">(optional)</span></label>
+              <input class="form-control" id="storeHoursNote" placeholder="e.g. Closed on holidays. Last order at 8:45 PM." />
+              <div class="form-hint">Extra info shown below the hours (holidays, cut-off times, etc.).</div>
+            </div>
+            <div>
+              <button class="btn btn-primary" id="saveStoreOpsBtn">Save Store Operations</button>
             </div>
           </div>
         </div>

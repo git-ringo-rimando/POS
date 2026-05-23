@@ -13,7 +13,6 @@ const app    = express();
 const SECRET = process.env.JWT_SECRET || 'pos_jwt_secret_2024_secure_key';
 
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
 
 // ── Middleware ─────────────────────────────────────────────────────────────────
 function extractToken(req) {
@@ -44,6 +43,28 @@ const adminOrManager = (req, res, next) => {
   if (!['admin', 'account_manager'].includes(req.user?.role)) return res.status(403).json({ error: 'Access restricted' });
   next();
 };
+
+const posAccess = (req, res, next) => {
+  if (!['admin', 'account_manager', 'cashier'].includes(req.user?.role)) {
+    return res.status(403).json({ error: 'Access restricted. Only Admin, Manager, or Cashier can access POS.' });
+  }
+  next();
+};
+
+// ── Order number generator ───────────────────────────────────────────────────────
+let orderSequence = {}; // Track sequence by minute: "202605231200" -> 5
+function generateOrderNumber(prefix = 'ORD') {
+  const now = new Date();
+  const yyyymmddhhmin = now.getFullYear().toString().slice(-2) +
+                        String(now.getMonth() + 1).padStart(2, '0') +
+                        String(now.getDate()).padStart(2, '0') +
+                        String(now.getHours()).padStart(2, '0') +
+                        String(now.getMinutes()).padStart(2, '0');
+  const key = yyyymmddhhmin;
+  orderSequence[key] = (orderSequence[key] || 0) + 1;
+  const sequence = String(orderSequence[key]).padStart(5, '0');
+  return `${prefix}-${yyyymmddhhmin}${sequence}`;
+}
 
 // Forwards async route errors to the global error handler below
 const ah = fn => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
@@ -474,7 +495,7 @@ app.post('/api/orders', auth, ah(async (req, res) => {
     const total    = Math.max(0, subtotal - discountAmt - redeemedPts);
     const paid     = parseFloat(amount_paid) || total;
     const change   = Math.max(0, paid - total);
-    const orderNum = `ORD-${Date.now()}`;
+    const orderNum = generateOrderNumber('ORD');
 
     const [ord] = await sql`
       INSERT INTO orders (order_number, user_id, subtotal, discount, total, payment_method, amount_paid, change_amount, notes, loyalty_member_id, points_redeemed, points_accumulated, points_distributed)
@@ -612,27 +633,119 @@ app.get('/icons/logo', ah(async (req, res) => {
 }));
 
 // ── Settings ───────────────────────────────────────────────────────────────────
+const SETTINGS_KEYS = ['business_name','logo','points_ratio','store_hours','store_status','store_hours_note','order_form_enabled','pos_enabled','coverage_cities'];
+const SETTINGS_DEFAULTS = { business_name: 'Aling Inday Kamuning Branch POS', logo: null, points_ratio: 100, store_hours: '', store_status: 'open', store_hours_note: '', order_form_enabled: 'true', pos_enabled: 'true', coverage_cities: '[]' };
+
 app.get('/api/settings', ah(async (req, res) => {
-  const rows = await sql`SELECT key, value FROM settings WHERE key IN ('business_name', 'logo', 'points_ratio')`;
-  const out = { business_name: 'Aling Inday Kamuning Branch POS', logo: null, points_ratio: 100 };
+  const rows = await sql`SELECT key, value FROM settings WHERE key = ANY(${SETTINGS_KEYS})`;
+  const out = { ...SETTINGS_DEFAULTS };
   rows.forEach(r => { out[r.key] = r.key === 'points_ratio' ? parseFloat(r.value) || 100 : r.value; });
   res.json(out);
 }));
 
+// Public settings — branding + store ops (no auth)
+app.get('/api/public/settings', ah(async (req, res) => {
+  const keys = ['business_name','logo','store_hours','store_status','store_hours_note','order_form_enabled','pos_enabled','coverage_cities'];
+  const rows = await sql`SELECT key, value FROM settings WHERE key = ANY(${keys})`;
+  const out = { business_name: 'Aling Inday Kamuning Branch POS', logo: null, store_hours: '', store_status: 'open', store_hours_note: '', order_form_enabled: 'true', pos_enabled: 'true', coverage_cities: '[]' };
+  rows.forEach(r => { out[r.key] = r.value; });
+  res.json(out);
+}));
+
 app.put('/api/settings', auth, adminOnly, ah(async (req, res) => {
-  const { business_name, logo, points_ratio } = req.body;
-  if (business_name !== undefined) {
-    const name = String(business_name).trim() || 'Aling Inday Kamuning Branch POS';
-    await sql`INSERT INTO settings (key, value) VALUES ('business_name', ${name}) ON CONFLICT (key) DO UPDATE SET value = ${name}, updated_at = CURRENT_TIMESTAMP`;
+  const { business_name, logo, points_ratio, store_hours, store_status, store_hours_note, order_form_enabled, pos_enabled, coverage_cities } = req.body;
+  const upsert = async (key, val) => sql`INSERT INTO settings (key, value) VALUES (${key}, ${val}) ON CONFLICT (key) DO UPDATE SET value = ${val}, updated_at = CURRENT_TIMESTAMP`;
+  if (business_name !== undefined)       await upsert('business_name', String(business_name).trim() || 'Aling Inday Kamuning Branch POS');
+  if (logo !== undefined)                await upsert('logo', logo);
+  if (points_ratio !== undefined)        await upsert('points_ratio', String(Math.max(1, parseFloat(points_ratio) || 100)));
+  if (store_hours !== undefined)         await upsert('store_hours', String(store_hours).trim());
+  if (store_status !== undefined)        await upsert('store_status', ['open','closed'].includes(store_status) ? store_status : 'open');
+  if (store_hours_note !== undefined)    await upsert('store_hours_note', String(store_hours_note).trim());
+  if (order_form_enabled !== undefined)  await upsert('order_form_enabled', order_form_enabled === true || order_form_enabled === 'true' ? 'true' : 'false');
+  if (pos_enabled !== undefined)         await upsert('pos_enabled', pos_enabled === true || pos_enabled === 'true' ? 'true' : 'false');
+  if (coverage_cities !== undefined)     await upsert('coverage_cities', Array.isArray(coverage_cities) ? JSON.stringify(coverage_cities) : String(coverage_cities));
+  res.json({ success: true });
+}));
+
+// ── Public order form endpoints (no auth) ──────────────────────────────────────
+app.get('/api/public/products', ah(async (req, res) => {
+  const products = await sql`SELECT id, name, sku, category, selling_price, stock, min_stock, unit FROM products WHERE online_available IS NOT FALSE ORDER BY category ASC, name ASC`;
+  res.json(products);
+}));
+
+app.patch('/api/products/:id/availability', auth, adminOnly, ah(async (req, res) => {
+  const id = parseInt(req.params.id);
+  const { online_available, pos_available } = req.body;
+  if (online_available !== undefined) {
+    if (online_available === true || online_available === 'true')
+      await sql`UPDATE products SET online_available = TRUE,  updated_at = CURRENT_TIMESTAMP WHERE id = ${id}`;
+    else
+      await sql`UPDATE products SET online_available = FALSE, updated_at = CURRENT_TIMESTAMP WHERE id = ${id}`;
   }
-  if (logo !== undefined) {
-    await sql`INSERT INTO settings (key, value) VALUES ('logo', ${logo}) ON CONFLICT (key) DO UPDATE SET value = ${logo}, updated_at = CURRENT_TIMESTAMP`;
-  }
-  if (points_ratio !== undefined) {
-    const ratio = Math.max(1, parseFloat(points_ratio) || 100);
-    await sql`INSERT INTO settings (key, value) VALUES ('points_ratio', ${String(ratio)}) ON CONFLICT (key) DO UPDATE SET value = ${String(ratio)}, updated_at = CURRENT_TIMESTAMP`;
+  if (pos_available !== undefined) {
+    if (pos_available === true || pos_available === 'true')
+      await sql`UPDATE products SET pos_available = TRUE,  updated_at = CURRENT_TIMESTAMP WHERE id = ${id}`;
+    else
+      await sql`UPDATE products SET pos_available = FALSE, updated_at = CURRENT_TIMESTAMP WHERE id = ${id}`;
   }
   res.json({ success: true });
+}));
+
+app.post('/api/public/orders', ah(async (req, res) => {
+  const { items, payment_method = 'cash', notes, loyalty_member_id, order_type = 'pickup' } = req.body;
+  if (!items?.length) return res.status(400).json({ error: 'Order must have at least one item' });
+
+  const [systemUser] = await sql`SELECT id, full_name FROM users WHERE role = 'admin' ORDER BY id ASC LIMIT 1`;
+  if (!systemUser) return res.status(503).json({ error: 'System not configured' });
+
+  const memberId = loyalty_member_id ? parseInt(loyalty_member_id) : null;
+
+  const result = await sql.begin(async sql => {
+    let subtotal = 0;
+    const resolved = [];
+    for (const item of items) {
+      const [p] = await sql`SELECT * FROM products WHERE id = ${item.product_id}`;
+      if (!p) throw Object.assign(new Error(`Product not found`), { status: 404 });
+      if (p.stock < item.quantity) throw Object.assign(new Error(`"${p.name}" only has ${p.stock} ${p.unit} left`), { status: 400 });
+      subtotal += p.selling_price * item.quantity;
+      resolved.push({ p, qty: item.quantity, lineTotal: p.selling_price * item.quantity });
+    }
+
+    const total    = subtotal;
+    const prefix = order_type === 'delivery' ? 'DEL' : 'PIK';
+    const orderNum = generateOrderNumber(prefix);
+
+    const [ord] = await sql`
+      INSERT INTO orders (order_number, user_id, subtotal, discount, total, payment_method, amount_paid, change_amount, notes, loyalty_member_id, points_redeemed, points_accumulated, points_distributed)
+      VALUES (${orderNum}, ${systemUser.id}, ${subtotal}, 0, ${total}, ${payment_method}, ${total}, 0, ${notes || null}, ${memberId}, 0, 0, ${sql.json([])})
+      RETURNING id`;
+
+    for (const { p, qty, lineTotal } of resolved) {
+      await sql`INSERT INTO order_items (order_id, product_id, product_name, cost_price, selling_price, quantity, total) VALUES (${ord.id}, ${p.id}, ${p.name}, ${p.cost_price}, ${p.selling_price}, ${qty}, ${lineTotal})`;
+      const newStock = p.stock - qty;
+      await sql`UPDATE products SET stock = ${newStock}, updated_at = CURRENT_TIMESTAMP WHERE id = ${p.id}`;
+      await sql`INSERT INTO inventory_logs (product_id, user_id, type, quantity, previous_stock, new_stock, notes) VALUES (${p.id}, ${systemUser.id}, 'out', ${qty}, ${p.stock}, ${newStock}, ${'Walk-in order: ' + orderNum})`;
+      await applyCascadedLinks(sql, p.id, newStock, p.name, systemUser.id);
+    }
+
+    // Award loyalty points to affiliate if provided
+    if (memberId) {
+      const [member] = await sql`SELECT id, full_name, points, referred_by_id FROM loyalty_members WHERE id = ${memberId}`;
+      if (member) {
+        const [ratioRow] = await sql`SELECT value FROM settings WHERE key = 'points_ratio'`;
+        const ratio = Math.max(1, parseFloat(ratioRow?.value) || 100);
+        const pts = Math.floor(subtotal / ratio);
+        if (pts > 0) {
+          const newPts = member.points + pts;
+          await sql`UPDATE loyalty_members SET points = ${newPts} WHERE id = ${memberId}`;
+          await sql`INSERT INTO loyalty_member_history (member_id, member_name, changed_by, field_changed, old_value, new_value) VALUES (${memberId}, ${member.full_name}, 'Walk-in Order', 'points', ${String(member.points)}, ${newPts + ' (+' + pts + ' pts from ' + orderNum + ')'})`;
+        }
+      }
+    }
+
+    return { order_id: ord.id, order_number: orderNum, subtotal, total, payment_method };
+  });
+  res.json(result);
 }));
 
 // ── Reports ────────────────────────────────────────────────────────────────────
@@ -945,11 +1058,24 @@ app.get('/sales/pos/admin.html', (req, res) => {
   }
 });
 
-// ── Affiliate / referral link ──────────────────────────────────────────────────
+// ── Affiliate / referral links ─────────────────────────────────────────────────
 app.get('/air/:code', (req, res) => {
   const code = req.params.code.toUpperCase().replace(/[^A-Z0-9]/g, '');
   res.redirect(302, `/AIR.html?ref=${encodeURIComponent(code)}`);
 });
+
+app.get('/order/:code', (req, res) => {
+  const code = req.params.code.toUpperCase().replace(/[^A-Z0-9]/g, '');
+  res.redirect(302, `/orderform.html?ref=${encodeURIComponent(code)}`);
+});
+
+// ── POS Terminal (with role-based access) ──────────────────────────────────────
+app.get('/sales/pos/pos.html', auth, posAccess, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'sales', 'pos', 'pos.html'));
+});
+
+// ── Static files (public assets) ────────────────────────────────────────────────
+app.use(express.static(path.join(__dirname, 'public')));
 
 // ── SPA fallback ───────────────────────────────────────────────────────────────
 app.get('*', (req, res) => {

@@ -2,6 +2,20 @@
 const user = getUser();
 if (!requireAuth()) throw new Error('stop');
 
+// Check POS enabled
+fetch('/api/public/settings').then(r => r.json()).then(s => {
+  if (s.pos_enabled === 'false') {
+    document.body.innerHTML = `
+      <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f9fafb;flex-direction:column;gap:16px;text-align:center;padding:24px">
+        <div style="font-size:48px">🔴</div>
+        <div style="font-size:22px;font-weight:800;color:#111827">POS Terminal Offline</div>
+        <div style="font-size:15px;color:#6b7280;max-width:340px">The POS terminal is currently disabled by the administrator. Please check back later or contact support.</div>
+        <a href="/sales/pos/admin.html" style="margin-top:8px;color:#4f46e5;font-size:14px;font-weight:600">← Back to portal</a>
+      </div>`;
+    throw new Error('pos_disabled');
+  }
+}).catch(() => {});
+
 let appSettings = { business_name: 'Aling Inday Kamuning Branch POS', logo: null };
 loadAppSettings().then(s => {
   appSettings = s;
@@ -36,7 +50,8 @@ let redeemedAmount = 0;
 // ── Products ───────────────────────────────────────────────────────────────────
 async function loadProducts() {
   try {
-    products = await api.get('/products');
+    const all = await api.get('/products');
+    products = all.filter(p => p.pos_available !== false);
     buildCategoryTabs();
     renderProducts();
     populateStockSelect();

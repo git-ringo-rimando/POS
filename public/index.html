@@ -6,58 +6,709 @@
   <title>Aling Inday Kamuning</title>
   <link rel="stylesheet" href="/css/style.css" />
   <style>
-    body { background: #f9fafb; }
-    .branch-page {
+    *, *::before, *::after { box-sizing: border-box; }
+    body { background: #f9fafb; margin: 0; }
+    .lp {
       min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-direction: column;
-      gap: 24px;
-      padding: 32px 16px;
-      text-align: center;
+      display: flex; align-items: center; justify-content: center;
+      flex-direction: column; gap: 16px;
+      padding: 32px 16px; text-align: center;
     }
-    .branch-logo-wrap {
-      width: 140px;
-      height: 140px;
-      border-radius: 28px;
-      background: linear-gradient(135deg, #4f46e5, #7c3aed);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 64px;
-      overflow: hidden;
-      box-shadow: 0 8px 40px rgba(79,70,229,.25);
-    }
-    .branch-name {
-      font-size: 30px;
-      font-weight: 800;
-      color: #111827;
-      line-height: 1.2;
-    }
-    .branch-sub {
-      font-size: 15px;
-      color: #9ca3af;
-      margin-top: 6px;
+    .lp-logo { width:140px;height:140px;border-radius:28px;background:linear-gradient(135deg,#4f46e5,#7c3aed);display:flex;align-items:center;justify-content:center;font-size:64px;overflow:hidden;box-shadow:0 8px 40px rgba(79,70,229,.25); }
+    .lp-name { font-size:30px;font-weight:800;color:#111827;line-height:1.2; }
+    .lp-sub  { font-size:15px;color:#9ca3af;margin-top:6px; }
+    .lp-card { background:white;border:1.5px solid #e5e7eb;border-radius:16px;padding:18px 22px;max-width:420px;width:100%;text-align:left;box-shadow:0 2px 12px rgba(0,0,0,.06); }
+    .lp-narrow { max-width:420px;width:100%; }
+
+    /* Offline */
+    .offline-banner { background:#fee2e2;border:1.5px solid #fca5a5;border-radius:12px;padding:14px 18px;max-width:420px;width:100%;text-align:center; }
+    .offline-banner strong { color:#991b1b;font-size:15px; }
+    .offline-banner p { color:#b91c1c;font-size:13px;margin:6px 0 0; }
+
+    /* Store hours */
+    .sh-title { display:flex;align-items:center;gap:8px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#6b7280;margin-bottom:10px; }
+    .sh-badge { font-size:11px;font-weight:700;padding:2px 10px;border-radius:10px;margin-left:auto; }
+    .sh-badge.open   { background:#d1fae5;color:#065f46; }
+    .sh-badge.closed { background:#fee2e2;color:#991b1b; }
+    .sh-text { font-size:15px;font-weight:600;color:#111827;white-space:pre-line;line-height:1.5; }
+    .sh-note { font-size:12px;color:#6b7280;margin-top:8px;line-height:1.5; }
+
+    /* Coverage */
+    .cov-list { display:flex;flex-wrap:wrap;gap:5px;margin-top:8px; }
+    .cov-tag  { font-size:11px;font-weight:600;background:#ede9fe;color:#5b21b6;padding:2px 9px;border-radius:10px; }
+
+    /* Ack */
+    .ack-row { display:flex;align-items:flex-start;gap:10px;background:#fffbeb;border:1.5px solid #fde68a;border-radius:10px;padding:12px 16px;max-width:420px;width:100%;cursor:pointer;text-align:left;user-select:none; }
+    .ack-row input[type="checkbox"] { width:18px;height:18px;accent-color:#4f46e5;flex-shrink:0;margin-top:1px;cursor:pointer; }
+    .ack-row label { font-size:13px;color:#78350f;font-weight:500;cursor:pointer;line-height:1.5; }
+
+    /* Date picker */
+    .date-section { max-width:420px;width:100%;text-align:left; }
+    .step-label { font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#6b7280;margin-bottom:8px; }
+    .date-btns { display:grid;grid-template-columns:1fr 1fr;gap:8px; }
+    .date-btn { background:white;border:2px solid #e5e7eb;border-radius:12px;padding:10px 8px;cursor:pointer;transition:all .15s;text-align:center;font-size:13px;font-weight:600;color:#374151;line-height:1.4; }
+    .date-btn:hover { border-color:#4f46e5;color:#4f46e5;background:#f5f3ff; }
+    .date-btn.active { border-color:#4f46e5;background:#4f46e5;color:white;box-shadow:0 2px 8px rgba(79,70,229,.3); }
+    .date-btn small { font-size:11px;font-weight:500;opacity:.75;display:block; }
+    .date-custom { grid-column:1/-1; }
+    .date-custom input[type="date"] { width:100%;height:42px;border:2px solid #e5e7eb;border-radius:12px;padding:0 12px;font-size:14px;font-weight:600;color:#374151;cursor:pointer;background:white;outline:none; }
+    .date-custom input[type="date"]:focus { border-color:#4f46e5; }
+
+    /* Order type */
+    .type-grid { display:grid;grid-template-columns:1fr 1fr;gap:10px; }
+    .type-btn { background:white;border:2px solid #e5e7eb;border-radius:14px;padding:18px 12px;cursor:pointer;transition:all .15s;text-align:center;display:flex;flex-direction:column;align-items:center;gap:6px; }
+    .type-btn:hover { border-color:#4f46e5;background:#f5f3ff; }
+    .type-btn.active { border-color:#4f46e5;background:#4f46e5;color:white; }
+    .type-icon { font-size:28px;line-height:1; }
+    .type-name { font-size:15px;font-weight:700; }
+    .type-sub  { font-size:11px;opacity:.7; }
+
+    /* Clock / Time picker */
+    .clock-wrap { display:flex;justify-content:center;align-items:center;gap:6px;margin:16px 0; }
+    .clock-col { display:flex;flex-direction:column;align-items:center;gap:4px; }
+    .clock-adj { background:none;border:none;font-size:20px;cursor:pointer;color:#4f46e5;padding:4px 10px;border-radius:8px;line-height:1; }
+    .clock-adj:hover { background:#ede9fe; }
+    .clock-val { font-size:40px;font-weight:800;color:#111827;min-width:64px;text-align:center;font-variant-numeric:tabular-nums; }
+    .clock-sep { font-size:40px;font-weight:800;color:#d1d5db;align-self:center;margin-top:-4px; }
+    .ampm-col { display:flex;flex-direction:column;gap:4px;margin-left:8px;align-self:center; }
+    .ampm-btn { background:#f3f4f6;border:1.5px solid #e5e7eb;border-radius:8px;padding:6px 12px;font-size:13px;font-weight:700;cursor:pointer;color:#6b7280;transition:all .15s; }
+    .ampm-btn.active { background:#4f46e5;border-color:#4f46e5;color:white; }
+    .time-error { color:#ef4444;font-size:13px;font-weight:600;margin-top:4px; }
+    .time-hint  { color:#6b7280;font-size:12px;margin-top:4px; }
+
+    /* CTA button */
+    .cta-btn { display:inline-flex;align-items:center;justify-content:center;gap:8px;background:#4f46e5;color:white;font-size:16px;font-weight:700;padding:13px 36px;border-radius:12px;border:none;cursor:pointer;transition:all .2s;box-shadow:0 4px 16px rgba(79,70,229,.35);width:100%;max-width:420px; }
+    .cta-btn:hover:not(:disabled) { background:#4338ca;transform:translateY(-1px); }
+    .cta-btn:disabled { background:#d1d5db;color:#9ca3af;cursor:not-allowed;box-shadow:none;transform:none; }
+
+    /* Confirmation modal */
+    .modal-bg { position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px; }
+    .confirm-card { background:white;border-radius:20px;padding:28px 24px;max-width:360px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.2); }
+    .confirm-title { font-size:20px;font-weight:800;color:#111827;margin-bottom:4px; }
+    .confirm-sub   { font-size:13px;color:#6b7280;margin-bottom:20px; }
+    .confirm-rows  { background:#f9fafb;border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:8px;text-align:left;margin-bottom:20px; }
+    .confirm-row   { display:flex;align-items:center;gap:10px;font-size:14px;color:#374151; }
+    .confirm-row strong { color:#111827; }
+    .confirm-btns  { display:flex;gap:10px; }
+    .confirm-btns .cta-btn { flex:1;padding:12px;font-size:15px; }
+    .confirm-btns .btn-back { flex:1;padding:12px;font-size:15px;background:white;border:1.5px solid #e5e7eb;border-radius:12px;color:#374151;font-weight:600;cursor:pointer; }
+    .confirm-btns .btn-back:hover { border-color:#4f46e5;color:#4f46e5; }
+
+    /* Delivery address modal */
+    .del-bg { position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:200;overflow-y:auto;display:flex;align-items:flex-start;justify-content:center;padding:24px 16px; }
+    .del-sheet { background:white;border-radius:20px;max-width:480px;width:100%;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,.2); }
+    .del-header { display:flex;align-items:center;justify-content:space-between;margin-bottom:6px; }
+    .del-header h3 { font-size:18px;font-weight:800;color:#111827;margin:0; }
+    .del-close { background:none;border:none;font-size:20px;cursor:pointer;color:#9ca3af;padding:4px; }
+    .del-close:hover { color:#374151; }
+    .del-time-row { background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:8px;padding:8px 14px;font-size:13px;color:#1e40af;font-weight:600;margin-bottom:16px; }
+    .del-field { margin-bottom:14px; }
+    .del-field label { font-size:12px;font-weight:700;color:#374151;display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.3px; }
+    .del-field label small { text-transform:none;font-weight:400;color:#9ca3af;letter-spacing:0; }
+    .del-field .del-input { width:100%;border:1.5px solid #e5e7eb;border-radius:10px;padding:9px 12px;font-size:14px;color:#111827;outline:none;transition:border .15s; }
+    .del-field .del-input:focus { border-color:#4f46e5; }
+    .del-field .del-input:disabled { background:#f9fafb;color:#9ca3af; }
+    .del-field .char-count { font-size:11px;color:#9ca3af;text-align:right;margin-top:2px; }
+    .del-dropdown { position:relative; }
+    .del-dropdown-list { position:absolute;top:100%;left:0;right:0;background:white;border:1.5px solid #e5e7eb;border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,.1);max-height:180px;overflow-y:auto;z-index:10;margin-top:3px; }
+    .del-dd-item { padding:9px 14px;font-size:13px;cursor:pointer;color:#374151;transition:background .1s; }
+    .del-dd-item:hover { background:#f5f3ff;color:#4f46e5; }
+    .del-dd-empty { padding:9px 14px;font-size:13px;color:#9ca3af;text-align:center; }
+    .del-selected-tag { display:inline-flex;align-items:center;gap:4px;background:#ede9fe;color:#4c1d95;font-size:12px;font-weight:600;padding:3px 10px;border-radius:10px;margin-top:4px; }
+
+    @media (max-width:480px) {
+      .clock-val { font-size:34px;min-width:54px; }
+      .clock-sep { font-size:34px; }
     }
   </style>
 </head>
 <body>
-  <div class="branch-page">
-    <div class="branch-logo-wrap" id="branchLogo">🛒</div>
-    <div>
-      <div class="branch-name" id="branchName">Aling Inday Kamuning</div>
-      <div class="branch-sub">Point of Sale</div>
+<div class="lp">
+
+  <!-- Brand -->
+  <div class="lp-logo" id="lpLogo">🛒</div>
+  <div>
+    <div class="lp-name" id="lpName">Aling Inday Kamuning</div>
+  </div>
+
+  <!-- Offline banner -->
+  <div class="offline-banner" id="offlineBanner" style="display:none">
+    <strong>🔴 Online Ordering Unavailable</strong>
+    <p>The online order form is currently disabled. Please visit us in-store or check back later.</p>
+  </div>
+
+  <!-- Store hours -->
+  <div class="lp-card" id="hoursCard" style="display:none">
+    <div class="sh-title">🕐 Store Hours <span class="sh-badge" id="shBadge">Open</span></div>
+    <div class="sh-text" id="shText">—</div>
+    <div class="sh-note" id="shNote" style="display:none"></div>
+  </div>
+
+  <!-- Coverage -->
+  <div class="lp-card" id="coverageCard" style="display:none">
+    <div class="sh-title">📍 Delivery Coverage</div>
+    <div class="cov-list" id="coverageList"></div>
+  </div>
+
+  <!-- Ack -->
+  <div class="ack-row" id="ackRow" style="display:none" onclick="document.getElementById('ackCheck').click()">
+    <input type="checkbox" id="ackCheck" onclick="event.stopPropagation()" />
+    <label for="ackCheck">I have read and understood the store hours and operating schedule.</label>
+  </div>
+
+  <!-- Step 1: Date -->
+  <div class="date-section" id="dateSection" style="display:none">
+    <div class="step-label">📅 Step 1 — Select Order Date</div>
+    <div class="date-btns" id="dateBtns"></div>
+  </div>
+
+  <!-- Step 2: Order Type -->
+  <div class="lp-narrow" id="typeSection" style="display:none">
+    <div class="step-label">📦 Step 2 — How would you like your order?</div>
+    <div class="type-grid">
+      <button class="type-btn" id="btnPickup">
+        <span class="type-icon">🏪</span>
+        <span class="type-name">Pick Up</span>
+        <span class="type-sub">Collect from store</span>
+      </button>
+      <button class="type-btn" id="btnDelivery">
+        <span class="type-icon">🛵</span>
+        <span class="type-name">Delivery</span>
+        <span class="type-sub">Delivered to your door</span>
+      </button>
     </div>
   </div>
-  <script src="/js/common.js"></script>
-  <script>
-    loadAppSettings().then(s => {
-      const name = s.business_name || 'Aling Inday Kamuning';
-      document.title = name;
-      document.getElementById('branchName').textContent = name;
-      applyLogoToEl(document.getElementById('branchLogo'), s, 'width:100%;height:100%;object-fit:contain;border-radius:28px');
-    });
-  </script>
+
+  <!-- Step 3: Time picker -->
+  <div class="lp-card lp-narrow" id="timeSection" style="display:none;text-align:center">
+    <div class="step-label" id="timeStepLabel">🕐 Step 3 — Select Pick Up Time</div>
+    <div class="clock-wrap">
+      <div class="clock-col">
+        <button class="clock-adj" onclick="adjHour(-1)">▲</button>
+        <div class="clock-val" id="clockH">09</div>
+        <button class="clock-adj" onclick="adjHour(1)">▼</button>
+      </div>
+      <div class="clock-sep">:</div>
+      <div class="clock-col">
+        <button class="clock-adj" onclick="adjMin(-1)">▲</button>
+        <div class="clock-val" id="clockM">00</div>
+        <button class="clock-adj" onclick="adjMin(1)">▼</button>
+      </div>
+      <div class="ampm-col">
+        <button class="ampm-btn active" id="amBtn" onclick="setAP('AM')">AM</button>
+        <button class="ampm-btn" id="pmBtn" onclick="setAP('PM')">PM</button>
+      </div>
+    </div>
+    <div class="time-error" id="timeError" style="display:none"></div>
+    <div class="time-hint" id="timeHint"></div>
+    <button class="cta-btn" id="timeContinueBtn" style="margin-top:16px" disabled>
+      Continue →
+    </button>
+  </div>
+
+</div><!-- end .lp -->
+
+<!-- ══ Confirm modal (Pick Up) ══════════════════════════════════════ -->
+<div class="modal-bg" id="confirmModal" style="display:none">
+  <div class="confirm-card">
+    <div class="confirm-title">Confirm Order</div>
+    <div class="confirm-sub">Please review your order details before proceeding.</div>
+    <div class="confirm-rows">
+      <div class="confirm-row">🏪 <span>Pick Up</span></div>
+      <div class="confirm-row">📅 <span>Date: <strong id="cfDate"></strong></span></div>
+      <div class="confirm-row">🕐 <span>Time: <strong id="cfTime"></strong></span></div>
+    </div>
+    <div class="confirm-btns">
+      <button class="cta-btn" id="cfYes">✓ Yes, Proceed</button>
+      <button class="btn-back" id="cfNo">← Go Back</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Delivery address modal ════════════════════════════════════════ -->
+<div class="del-bg" id="deliveryModal" style="display:none">
+  <div class="del-sheet">
+    <div class="del-header">
+      <h3>🛵 Delivery Details</h3>
+      <button class="del-close" id="closeDelModal">✕</button>
+    </div>
+    <div class="del-time-row">🕐 Delivery time: <span id="delTimeDisplay">—</span></div>
+
+    <div class="del-field">
+      <label>Customer Name <small>(required · max 50 chars)</small></label>
+      <input class="del-input" id="delCustomerName" type="text" maxlength="50" placeholder="Full name of the customer" />
+    </div>
+
+    <div class="del-field">
+      <label>Address Line 1 <small>(required · max 50 chars)</small></label>
+      <input class="del-input" id="delAddr1" type="text" maxlength="50" placeholder="House/Unit No., Street, Subdivision…" oninput="updateCharCount()" />
+      <div class="char-count" id="addr1Count">0 / 50</div>
+    </div>
+    <div class="del-field">
+      <label>Address Line 2 <small>(optional)</small></label>
+      <input class="del-input" id="delAddr2" type="text" maxlength="100" placeholder="Landmark, floor, additional info…" />
+    </div>
+
+    <div class="del-field">
+      <label>Country</label>
+      <input class="del-input" value="🇵🇭 Philippines" disabled />
+    </div>
+
+    <div class="del-field">
+      <label>City / Municipality <small>(required)</small></label>
+      <div class="del-dropdown">
+        <input class="del-input" id="cityInput" type="text" placeholder="Search or select city/municipality…" autocomplete="off" />
+        <div class="del-dropdown-list" id="cityDropdown" style="display:none"></div>
+      </div>
+      <div id="cityTag" style="display:none"></div>
+    </div>
+
+    <div class="del-field">
+      <label>Barangay <small>(required)</small></label>
+      <div class="del-dropdown">
+        <input class="del-input" id="brgyInput" type="text" placeholder="Select city first…" autocomplete="off" disabled />
+        <div class="del-dropdown-list" id="brgyDropdown" style="display:none"></div>
+      </div>
+      <div id="brgyTag" style="display:none"></div>
+    </div>
+
+    <div class="del-field">
+      <label>Primary Contact <small>(required · numbers only)</small></label>
+      <input class="del-input" id="contact1" type="tel" placeholder="09XXXXXXXXX" oninput="filterPhoneInput(this)" />
+    </div>
+    <div class="del-field">
+      <label>Secondary Contact <small>(optional · numbers only)</small></label>
+      <input class="del-input" id="contact2" type="tel" placeholder="09XXXXXXXXX" oninput="filterPhoneInput(this)" />
+    </div>
+
+    <button class="cta-btn" id="delProceedBtn" style="margin-top:8px">
+      🛒 Proceed to Order
+    </button>
+    <div id="delFormError" style="color:#ef4444;font-size:13px;margin-top:8px;text-align:center;display:none"></div>
+  </div>
+</div>
+
+<!-- ══ Delivery Confirmation Modal ════════════════════════════════ -->
+<div class="modal-bg" id="delConfirmModal" style="display:none">
+  <div class="confirm-card">
+    <div class="confirm-title">Confirm Delivery Order</div>
+    <div class="confirm-sub">Please review your delivery details before proceeding.</div>
+    <div class="confirm-rows">
+      <div class="confirm-row">🛵 <span>Delivery</span></div>
+      <div class="confirm-row">📅 <span>Date: <strong id="delCfDate"></strong></span></div>
+      <div class="confirm-row">🕐 <span>Time: <strong id="delCfTime"></strong></span></div>
+      <div class="confirm-row">👤 <span>Name: <strong id="delCfName"></strong></span></div>
+      <div class="confirm-row">📍 <span>Address: <strong id="delCfAddr"></strong></span></div>
+    </div>
+    <div class="confirm-btns">
+      <button class="cta-btn" id="delCfYes">✓ Yes, Proceed</button>
+      <button class="btn-back" id="delCfNo">← Go Back & Edit</button>
+    </div>
+  </div>
+</div>
+
+<script src="/js/common.js"></script>
+<script>
+// ── State ──────────────────────────────────────────────────────────────────────
+let _settings       = {};
+let _storeRange     = null;   // {open: mins, close: mins}
+let _coverageCities = [];     // string[] from settings
+let _psgcCities     = [];     // [{name, code, type}] from PSGC, filtered by coverage
+let _psgcLoaded     = false;
+
+let _selectedDate  = null;
+let _orderType     = null;    // 'pickup' | 'delivery'
+let _hour          = 9;
+let _minute        = 0;
+let _ampm          = 'AM';
+
+let _selectedCity  = null;    // {name, code, type}
+let _selectedBrgy  = null;    // string
+
+// ── Store hours parser ─────────────────────────────────────────────────────────
+function parseStoreRange(str) {
+  if (!str) return null;
+  const re = /(\d{1,2})(?::(\d{2}))?\s*(AM|PM)/gi;
+  const times = [];
+  let m;
+  while ((m = re.exec(str)) !== null)
+    times.push({ h: parseInt(m[1]), min: parseInt(m[2] || 0), ap: m[3].toUpperCase() });
+  if (times.length < 2) return null;
+  const toM = ({h, min, ap}) => { let x = h % 12; if (ap === 'PM') x += 12; return x * 60 + min; };
+  return { open: toM(times[0]), close: toM(times[1]) };
+}
+function fmtMins(m) {
+  const h = Math.floor(m / 60), mn = m % 60, ap = h >= 12 ? 'PM' : 'AM';
+  return `${h % 12 || 12}:${String(mn).padStart(2,'0')} ${ap}`;
+}
+function selectedMins() {
+  let h = _hour % 12;
+  if (_ampm === 'PM') h += 12;
+  return h * 60 + _minute;
+}
+function isTimeValid() {
+  if (!_storeRange) return true;
+  const m = selectedMins();
+  return m >= _storeRange.open && m <= _storeRange.close;
+}
+
+// ── Clock controls ─────────────────────────────────────────────────────────────
+function adjHour(d) {
+  _hour = (_hour - 1 + d + 12) % 12 + 1;
+  renderClock();
+}
+function adjMin(d) {
+  _minute = (_minute + d * 5 + 60) % 60;
+  renderClock();
+}
+function setAP(v) {
+  _ampm = v;
+  document.getElementById('amBtn').classList.toggle('active', v === 'AM');
+  document.getElementById('pmBtn').classList.toggle('active', v === 'PM');
+  renderClock();
+}
+function renderClock() {
+  document.getElementById('clockH').textContent = String(_hour).padStart(2,'0');
+  document.getElementById('clockM').textContent = String(_minute).padStart(2,'0');
+  const valid = isTimeValid();
+  const errEl = document.getElementById('timeError');
+  const btn   = document.getElementById('timeContinueBtn');
+  if (_storeRange && !valid) {
+    errEl.textContent = `⚠ Store hours: ${fmtMins(_storeRange.open)} – ${fmtMins(_storeRange.close)}`;
+    errEl.style.display = '';
+  } else {
+    errEl.style.display = 'none';
+  }
+  btn.disabled = !valid;
+}
+function fmtSelectedTime() {
+  return `${String(_hour).padStart(2,'0')}:${String(_minute).padStart(2,'0')} ${_ampm}`;
+}
+
+// ── Date picker ────────────────────────────────────────────────────────────────
+function isoDate(d) { return d.toISOString().slice(0,10); }
+function fmtDateLong(iso) {
+  return new Date(iso + 'T00:00:00').toLocaleDateString('en-PH',
+    { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+}
+function fmtDateShort(d, label) {
+  const s = d.toLocaleDateString('en-PH', { month:'short', day:'numeric' });
+  return label ? `${label}<br><small>${s}</small>` : `${s}<br><small>${d.toLocaleDateString('en-PH',{weekday:'short'})}</small>`;
+}
+function selectDate(iso, btn) {
+  _selectedDate = iso;
+  document.querySelectorAll('.date-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  showTypeSection();
+}
+
+function buildDatePicker() {
+  const today = new Date(), t1 = new Date(today), t2 = new Date(today);
+  t1.setDate(today.getDate() + 1); t2.setDate(today.getDate() + 2);
+  const max = new Date(today); max.setDate(today.getDate() + 10);
+  const container = document.getElementById('dateBtns');
+  container.innerHTML = `
+    <button class="date-btn" data-iso="${isoDate(today)}"   onclick="selectDate('${isoDate(today)}',this)">Today<br><small>${today.toLocaleDateString('en-PH',{month:'short',day:'numeric'})}</small></button>
+    <button class="date-btn" data-iso="${isoDate(t1)}"      onclick="selectDate('${isoDate(t1)}',this)">${t1.toLocaleDateString('en-PH',{month:'short',day:'numeric'})}<br><small>${t1.toLocaleDateString('en-PH',{weekday:'short'})}</small></button>
+    <button class="date-btn" data-iso="${isoDate(t2)}"      onclick="selectDate('${isoDate(t2)}',this)">${t2.toLocaleDateString('en-PH',{month:'short',day:'numeric'})}<br><small>${t2.toLocaleDateString('en-PH',{weekday:'short'})}</small></button>
+    <div class="date-custom"><input type="date" id="customDate" min="${isoDate(today)}" max="${isoDate(max)}" /></div>`;
+  document.getElementById('customDate').addEventListener('change', function() {
+    if (this.value) { document.querySelectorAll('.date-btn').forEach(b=>b.classList.remove('active')); selectDate(this.value, null); }
+  });
+}
+
+// ── Section visibility ─────────────────────────────────────────────────────────
+function showTypeSection() {
+  document.getElementById('typeSection').style.display = '';
+  document.getElementById('timeSection').style.display = 'none';
+}
+function showTimeSection(type) {
+  _orderType = type;
+  document.getElementById('btnPickup').classList.toggle('active', type === 'pickup');
+  document.getElementById('btnDelivery').classList.toggle('active', type === 'delivery');
+  document.getElementById('timeStepLabel').textContent =
+    type === 'pickup' ? '🕐 Step 3 — Select Pick Up Time' : '🕐 Step 3 — Select Delivery Time';
+  document.getElementById('timeContinueBtn').textContent =
+    type === 'pickup' ? 'Review Order →' : 'Enter Delivery Details →';
+  if (_storeRange) {
+    document.getElementById('timeHint').textContent = `Store hours: ${fmtMins(_storeRange.open)} – ${fmtMins(_storeRange.close)}`;
+  }
+  renderClock();
+  document.getElementById('timeSection').style.display = '';
+  document.getElementById('timeSection').scrollIntoView({ behavior:'smooth', block:'center' });
+}
+
+// ── Type buttons ───────────────────────────────────────────────────────────────
+document.getElementById('btnPickup').addEventListener('click', () => showTimeSection('pickup'));
+document.getElementById('btnDelivery').addEventListener('click', () => {
+  if (_coverageCities.length === 0 && !_psgcLoaded) loadPSGCForDelivery();
+  showTimeSection('delivery');
+});
+
+// ── Time Continue ──────────────────────────────────────────────────────────────
+document.getElementById('timeContinueBtn').addEventListener('click', () => {
+  if (_orderType === 'pickup') openConfirmModal();
+  else openDeliveryModal();
+});
+
+// ── Confirm modal (Pick Up) ────────────────────────────────────────────────────
+function openConfirmModal() {
+  document.getElementById('cfDate').textContent = fmtDateLong(_selectedDate);
+  document.getElementById('cfTime').textContent = fmtSelectedTime();
+  document.getElementById('confirmModal').style.display = 'flex';
+}
+document.getElementById('cfNo').addEventListener('click', () => {
+  document.getElementById('confirmModal').style.display = 'none';
+});
+document.getElementById('cfYes').addEventListener('click', () => {
+  document.getElementById('confirmModal').style.display = 'none';
+  sessionStorage.setItem('_posOrder', JSON.stringify({
+    type: 'pickup',
+    date: _selectedDate,
+    dateFmt: fmtDateLong(_selectedDate),
+    time: fmtSelectedTime()
+  }));
+  window.location.href = '/orderform.html';
+});
+
+// ── Delivery modal ─────────────────────────────────────────────────────────────
+function openDeliveryModal() {
+  document.getElementById('delTimeDisplay').textContent = fmtSelectedTime();
+  document.getElementById('deliveryModal').style.display = 'flex';
+  if (!_psgcLoaded) loadPSGCForDelivery();
+}
+document.getElementById('closeDelModal').addEventListener('click', () => {
+  document.getElementById('deliveryModal').style.display = 'none';
+});
+
+// ── Address char counter ───────────────────────────────────────────────────────
+function updateCharCount() {
+  const v = document.getElementById('delAddr1').value.length;
+  document.getElementById('addr1Count').textContent = `${v} / 50`;
+}
+function filterPhoneInput(el) {
+  el.value = el.value.replace(/[^\d\s\-\+\(\)]/g, '');
+}
+
+// ── PSGC city/barangay ─────────────────────────────────────────────────────────
+async function loadPSGCForDelivery() {
+  try {
+    const [cities, munis] = await Promise.all([
+      fetch('https://psgc.gitlab.io/api/cities.json').then(r => r.json()),
+      fetch('https://psgc.gitlab.io/api/municipalities.json').then(r => r.json())
+    ]);
+    const all = [
+      ...cities.map(c => ({ name: c.name, code: c.code, type: 'city' })),
+      ...munis.map(m => ({ name: m.name, code: m.code, type: 'municipality' }))
+    ].sort((a,b) => a.name.localeCompare(b.name));
+    // Filter by coverage if set
+    if (_coverageCities.length > 0) {
+      const cov = _coverageCities.map(x => x.toLowerCase());
+      _psgcCities = all.filter(c => cov.some(cv => c.name.toLowerCase().includes(cv) || cv.includes(c.name.toLowerCase())));
+    } else {
+      _psgcCities = all;
+    }
+    _psgcLoaded = true;
+  } catch { _psgcCities = []; }
+}
+
+// City search
+document.getElementById('cityInput').addEventListener('input', function() {
+  const q = this.value.toLowerCase().trim();
+  const dd = document.getElementById('cityDropdown');
+  if (!q) { dd.style.display = 'none'; return; }
+  const matches = _psgcCities.filter(c => c.name.toLowerCase().includes(q)).slice(0, 12);
+  if (!matches.length) {
+    dd.innerHTML = `<div class="del-dd-empty">No results for "${this.value}"</div>`;
+  } else {
+    dd.innerHTML = matches.map(c =>
+      `<div class="del-dd-item" onclick="selectCity(${JSON.stringify(c).replace(/"/g,'&quot;')})">${c.name}</div>`
+    ).join('');
+  }
+  dd.style.display = '';
+});
+document.getElementById('cityInput').addEventListener('blur', () => {
+  setTimeout(() => { document.getElementById('cityDropdown').style.display = 'none'; }, 200);
+});
+
+function selectCity(c) {
+  _selectedCity = c;
+  _selectedBrgy = null;
+  document.getElementById('cityInput').value = '';
+  document.getElementById('cityDropdown').style.display = 'none';
+  document.getElementById('cityTag').innerHTML = `<span class="del-selected-tag">📍 ${c.name} ✕</span>`;
+  document.getElementById('cityTag').style.display = '';
+  document.getElementById('cityTag').querySelector('span').onclick = clearCity;
+  // Enable barangay
+  const bi = document.getElementById('brgyInput');
+  bi.disabled = false; bi.placeholder = `Search barangay in ${c.name}…`;
+  bi.value = '';
+  document.getElementById('brgyTag').style.display = 'none';
+  document.getElementById('brgyDropdown').style.display = 'none';
+  _brgyCache = null;
+}
+function clearCity() {
+  _selectedCity = null; _selectedBrgy = null;
+  document.getElementById('cityTag').style.display = 'none';
+  document.getElementById('cityInput').value = '';
+  const bi = document.getElementById('brgyInput');
+  bi.disabled = true; bi.value = ''; bi.placeholder = 'Select city first…';
+  document.getElementById('brgyTag').style.display = 'none';
+  document.getElementById('brgyDropdown').style.display = 'none';
+}
+
+// Barangay search
+let _brgyCache = null;
+document.getElementById('brgyInput').addEventListener('focus', async function() {
+  if (!_selectedCity || _brgyCache) return;
+  this.placeholder = 'Loading barangays…';
+  try {
+    const url = `https://psgc.gitlab.io/api/${_selectedCity.type === 'city' ? 'cities' : 'municipalities'}/${_selectedCity.code}/barangays.json`;
+    const data = await fetch(url).then(r => r.json());
+    _brgyCache = data.map(b => b.name).sort((a,b) => a.localeCompare(b));
+    this.placeholder = `Search barangay in ${_selectedCity.name}…`;
+  } catch {
+    _brgyCache = [];
+    this.placeholder = 'Could not load barangays';
+  }
+});
+document.getElementById('brgyInput').addEventListener('input', function() {
+  const q = this.value.toLowerCase().trim();
+  const dd = document.getElementById('brgyDropdown');
+  if (!q || !_brgyCache) { dd.style.display = 'none'; return; }
+  const matches = _brgyCache.filter(b => b.toLowerCase().includes(q)).slice(0, 12);
+  if (!matches.length) {
+    dd.innerHTML = `<div class="del-dd-empty">No results</div>`;
+  } else {
+    dd.innerHTML = matches.map(b =>
+      `<div class="del-dd-item" onclick="selectBrgy('${b.replace(/'/g,"\\'")}')">${b}</div>`
+    ).join('');
+  }
+  dd.style.display = '';
+});
+document.getElementById('brgyInput').addEventListener('blur', () => {
+  setTimeout(() => { document.getElementById('brgyDropdown').style.display = 'none'; }, 200);
+});
+function selectBrgy(name) {
+  _selectedBrgy = name;
+  document.getElementById('brgyInput').value = '';
+  document.getElementById('brgyDropdown').style.display = 'none';
+  document.getElementById('brgyTag').innerHTML = `<span class="del-selected-tag">🏘 ${name} ✕</span>`;
+  document.getElementById('brgyTag').style.display = '';
+  document.getElementById('brgyTag').querySelector('span').onclick = clearBrgy;
+}
+function clearBrgy() {
+  _selectedBrgy = null;
+  document.getElementById('brgyTag').style.display = 'none';
+  document.getElementById('brgyInput').value = '';
+}
+
+// ── Delivery Proceed ───────────────────────────────────────────────────────────
+let _delOrderData = null;
+document.getElementById('delProceedBtn').addEventListener('click', () => {
+  const customerName = document.getElementById('delCustomerName').value.trim();
+  const addr1        = document.getElementById('delAddr1').value.trim();
+  const addr2        = document.getElementById('delAddr2').value.trim();
+  const contact1     = document.getElementById('contact1').value.trim();
+  const contact2     = document.getElementById('contact2').value.trim();
+  const errEl        = document.getElementById('delFormError');
+  errEl.style.display = 'none';
+
+  const errs = [];
+  if (!customerName)   errs.push('Customer name is required.');
+  if (!addr1)          errs.push('Address Line 1 is required.');
+  if (!_selectedCity)  errs.push('City / Municipality is required.');
+  if (!_selectedBrgy)  errs.push('Barangay is required.');
+  if (!contact1)       errs.push('Primary contact is required.');
+  else if (contact1.replace(/\D/g,'').length < 7) errs.push('Primary contact must have at least 7 digits.');
+
+  if (errs.length) { errEl.textContent = errs[0]; errEl.style.display = ''; return; }
+
+  _delOrderData = {
+    type:         'delivery',
+    date:         _selectedDate,
+    dateFmt:      fmtDateLong(_selectedDate),
+    time:         fmtSelectedTime(),
+    customerName,
+    addr1, addr2,
+    city:         _selectedCity.name,
+    brgy:         _selectedBrgy,
+    contact1, contact2,
+    country:      'Philippines'
+  };
+
+  document.getElementById('delCfDate').textContent = _delOrderData.dateFmt;
+  document.getElementById('delCfTime').textContent = _delOrderData.time;
+  document.getElementById('delCfName').textContent = customerName;
+  document.getElementById('delCfAddr').textContent = addr1 + (addr2 ? ', ' + addr2 : '') + ', ' + _selectedBrgy + ', ' + _selectedCity.name;
+  document.getElementById('delConfirmModal').style.display = 'flex';
+});
+
+document.getElementById('delCfNo').addEventListener('click', () => {
+  document.getElementById('delConfirmModal').style.display = 'none';
+});
+
+document.getElementById('delCfYes').addEventListener('click', () => {
+  document.getElementById('delConfirmModal').style.display = 'none';
+  sessionStorage.setItem('_posOrder', JSON.stringify(_delOrderData));
+  window.location.href = '/orderform.html';
+});
+
+// ── Acknowledgement → date ─────────────────────────────────────────────────────
+document.getElementById('ackCheck').addEventListener('change', function() {
+  document.getElementById('dateSection').style.display = this.checked ? '' : 'none';
+  document.getElementById('typeSection').style.display = 'none';
+  document.getElementById('timeSection').style.display = 'none';
+  _selectedDate = null; _orderType = null;
+});
+
+// ── Load settings ──────────────────────────────────────────────────────────────
+fetch('/api/public/settings').then(r => r.json()).then(s => {
+  _settings = s;
+  const name = s.business_name || 'Aling Inday Kamuning';
+  document.title = name;
+  document.getElementById('lpName').textContent = name;
+  applyLogoToEl(document.getElementById('lpLogo'), s, 'width:100%;height:100%;object-fit:contain;border-radius:28px');
+
+  if (s.order_form_enabled === 'false') {
+    document.getElementById('offlineBanner').style.display = '';
+    return;
+  }
+
+  const hours = (s.store_hours || '').trim();
+  if (hours) {
+    _storeRange = parseStoreRange(hours);
+    document.getElementById('shText').textContent = hours;
+    const closed = s.store_status === 'closed';
+    const badge  = document.getElementById('shBadge');
+    badge.textContent = closed ? 'Closed' : 'Open';
+    badge.className   = 'sh-badge ' + (closed ? 'closed' : 'open');
+    const note = (s.store_hours_note || '').trim();
+    if (note) { document.getElementById('shNote').textContent = note; document.getElementById('shNote').style.display = ''; }
+    document.getElementById('hoursCard').style.display = '';
+    document.getElementById('ackRow').style.display = '';
+  } else {
+    buildDatePicker();
+    document.getElementById('dateSection').style.display = '';
+  }
+
+  try {
+    _coverageCities = JSON.parse(s.coverage_cities || '[]');
+    if (_coverageCities.length) {
+      document.getElementById('coverageList').innerHTML = _coverageCities.map(c => `<span class="cov-tag">${c}</span>`).join('');
+      document.getElementById('coverageCard').style.display = '';
+    }
+  } catch { _coverageCities = []; }
+
+}).catch(() => {
+  buildDatePicker();
+  document.getElementById('dateSection').style.display = '';
+});
+
+// Show date section when ack is ticked
+document.getElementById('ackCheck').addEventListener('change', function() {
+  if (this.checked && !document.getElementById('dateBtns').children.length) buildDatePicker();
+});
+</script>
 </body>
 </html>

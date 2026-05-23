@@ -6,8 +6,8 @@ const STATIC_ASSETS = [
 ];
 
 const STAFF_PAGES = [
-  '/pos.html',
-  '/admin.html',
+  '/sales/pos/pos.html',
+  '/sales/pos/admin.html',
   '/index.html',
   '/login.html',
   '/AIR-admin.html'

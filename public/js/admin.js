@@ -15,7 +15,7 @@ document.getElementById('logoutBtn').addEventListener('click', async () => {
   clearSession();
   window.location.href = '/sales/pos/admin.html';
 });
-document.getElementById('posLink').addEventListener('click', () => window.location.href = '/pos.html');
+document.getElementById('posLink').addEventListener('click', () => window.location.href = '/sales/pos/pos.html');
 
 // Hide admin-only nav items for non-admins
 if (!isAdmin) {
@@ -59,30 +59,47 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 // ══════════════════════════════════════════════════════════════════════════════
 // DASHBOARD
 // ══════════════════════════════════════════════════════════════════════════════
-async function loadDashboard() {
+let _dashRange = 'today';
+
+function getDashRange(range) {
+  const today = new Date();
+  const iso = d => d.toISOString().slice(0, 10);
+  const shift = n => { const d = new Date(today); d.setDate(d.getDate() + n); return iso(d); };
+  if (range === 'yesterday') { const y = shift(-1); return { from: y, to: y, label: 'Yesterday' }; }
+  if (range === '7days')     return { from: shift(-6), to: iso(today), label: 'Last 7 Days' };
+  if (range === 'week') {
+    const dow = today.getDay() || 7;
+    const mon = new Date(today); mon.setDate(today.getDate() - (dow - 1));
+    return { from: iso(mon), to: iso(today), label: 'This Week' };
+  }
+  if (range === 'month') {
+    const first = new Date(today.getFullYear(), today.getMonth(), 1);
+    return { from: iso(first), to: iso(today), label: 'This Month' };
+  }
+  const t = iso(today);
+  return { from: t, to: t, label: 'Today' };
+}
+
+async function loadDashboard(range) {
+  if (range) _dashRange = range;
+  const { from, to, label } = getDashRange(_dashRange);
+  document.querySelectorAll('.dash-range-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.range === _dashRange));
   try {
-    const today = new Date().toISOString().slice(0, 10);
     const [summary, allProducts] = await Promise.all([
-      api.get(`/reports/summary?from=${today}&to=${today}`),
+      api.get(`/reports/summary?from=${from}&to=${to}`),
       api.get('/products')
     ]);
-
     document.getElementById('kpiRevenue').textContent = fmt(summary.revenue);
-    document.getElementById('kpiOrders').textContent = `${summary.orders} orders today`;
+    document.getElementById('kpiOrders').textContent = `${summary.orders} orders`;
     document.getElementById('kpiProfit').textContent = fmt(summary.gross_profit);
     document.getElementById('kpiMargin').textContent = `${summary.profit_margin}% margin`;
     document.getElementById('kpiProducts').textContent = allProducts.length;
     document.getElementById('kpiLowStock').textContent = `${summary.low_stock.length} need restocking`;
     document.getElementById('kpiLowStockCount').textContent = summary.low_stock.length;
-
-    // Revenue chart (last 30 days)
-    const thirtyDaysAgo = new Date(); thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 29);
-    const from = thirtyDaysAgo.toISOString().slice(0, 10);
-    const chartData = await api.get(`/reports/summary?from=${from}&to=${today}`);
-    renderRevenueChart(chartData.daily_sales);
-    renderTopProductsList(chartData.top_products);
-
-    // Low stock table
+    document.getElementById('dashChartTitle').textContent = `Revenue — ${label}`;
+    renderRevenueChart(summary.daily_sales);
+    renderTopProductsList(summary.top_products);
     const tbody = document.getElementById('lowStockBody');
     if (summary.low_stock.length === 0) {
       tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#9ca3af;padding:24px">No low stock items 🎉</td></tr>`;
@@ -136,7 +153,9 @@ function renderTopProductsList(products) {
     </div>`).join('');
 }
 
-document.getElementById('dashRefresh').addEventListener('click', loadDashboard);
+document.querySelectorAll('.dash-range-btn').forEach(btn =>
+  btn.addEventListener('click', () => loadDashboard(btn.dataset.range)));
+document.getElementById('dashRefresh').addEventListener('click', () => loadDashboard());
 
 // ══════════════════════════════════════════════════════════════════════════════
 // PRODUCTS
@@ -170,11 +189,13 @@ function renderProductsTable() {
   });
   const tbody = document.getElementById('productsBody');
   if (!filtered.length) {
-    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:#9ca3af;padding:24px">No products found</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;color:#9ca3af;padding:24px">No products found</td></tr>`;
     return;
   }
   tbody.innerHTML = filtered.map(p => {
     const margin = p.selling_price > 0 ? ((p.selling_price - p.cost_price) / p.selling_price * 100).toFixed(1) : 0;
+    const onlineOn = p.online_available !== false;
+    const posOn    = p.pos_available    !== false;
     return `
       <tr>
         <td><strong>${p.name}</strong></td>
@@ -184,6 +205,12 @@ function renderProductsTable() {
         <td style="font-weight:600">${fmt(p.selling_price)}</td>
         <td><span class="badge ${parseFloat(margin) > 20 ? 'badge-success' : parseFloat(margin) > 10 ? 'badge-warning' : 'badge-danger'}">${margin}%</span></td>
         <td>${stockBadge(p.stock, p.min_stock)}</td>
+        <td style="text-align:center">
+          <div style="display:flex;justify-content:center;gap:2px">
+            <button class="avail-btn ${onlineOn ? 'avail-on' : 'avail-off'}" data-avail-id="${p.id}" data-avail-field="online_available" title="Online Order Form: ${onlineOn ? 'ON' : 'OFF'}">🌐</button>
+            <button class="avail-btn ${posOn    ? 'avail-on' : 'avail-off'}" data-avail-id="${p.id}" data-avail-field="pos_available"    title="POS Terminal: ${posOn    ? 'ON' : 'OFF'}">🖥️</button>
+          </div>
+        </td>
         <td>
           <div class="table-actions">
             <button class="btn btn-sm btn-outline" data-edit="${p.id}">Edit</button>
@@ -194,6 +221,27 @@ function renderProductsTable() {
   }).join('');
   tbody.querySelectorAll('[data-edit]').forEach(btn => {
     btn.addEventListener('click', () => openProductModal(allProducts.find(p => p.id === parseInt(btn.dataset.edit))));
+  });
+  tbody.querySelectorAll('.avail-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const pid   = parseInt(btn.dataset.availId);
+      const field = btn.dataset.availField;
+      const p = allProducts.find(x => x.id === pid);
+      if (!p) return;
+      const newVal = p[field] === false ? true : false;
+      p[field] = newVal;
+      btn.classList.toggle('avail-on', newVal);
+      btn.classList.toggle('avail-off', !newVal);
+      btn.title = `${field === 'online_available' ? 'Online Order Form' : 'POS Terminal'}: ${newVal ? 'ON' : 'OFF'}`;
+      try {
+        await apiFetch(`/products/${pid}/availability`, { method: 'PATCH', body: { [field]: newVal } });
+      } catch (e) {
+        p[field] = !newVal;
+        btn.classList.toggle('avail-on', !newVal);
+        btn.classList.toggle('avail-off', newVal);
+        toast.error('Failed to update: ' + e.message);
+      }
+    });
   });
   tbody.querySelectorAll('[data-delete]').forEach(btn => {
     let confirmed = false;
@@ -1188,11 +1236,18 @@ function applyAdminBranding(settings) {
 }
 
 async function loadSettingsSection() {
-  const settings = await loadAppSettings();
+  const settings = await api.get('/settings');
   _pendingLogoB64 = undefined;
   document.getElementById('settingsName').value = settings.business_name || '';
   applyLogoToEl(document.getElementById('settingsLogoBox'), settings, 'border-radius:6px');
   document.getElementById('settingsLogoFile').value = '';
+  document.getElementById('storeHours').value = settings.store_hours || '';
+  document.getElementById('storeHoursNote').value = settings.store_hours_note || '';
+  const status = settings.store_status || 'open';
+  document.getElementById('storeStatusOpen').checked   = status === 'open';
+  document.getElementById('storeStatusClosed').checked = status === 'closed';
+  try { _selectedCities = JSON.parse(settings.coverage_cities || '[]'); } catch { _selectedCities = []; }
+  renderSelectedCities();
 }
 
 document.getElementById('settingsLogoFile').addEventListener('change', () => {
@@ -1219,7 +1274,7 @@ document.getElementById('saveSettingsBtn').addEventListener('click', async () =>
   const name = document.getElementById('settingsName').value.trim();
   if (!name) { toast.error('Business name cannot be empty'); return; }
   const body = { business_name: name };
-  if (_pendingLogoB64 !== undefined) body.logo = _pendingLogoB64; // null or base64
+  if (_pendingLogoB64 !== undefined) body.logo = _pendingLogoB64;
   const btn = document.getElementById('saveSettingsBtn');
   btn.disabled = true; btn.textContent = 'Saving…';
   try {
@@ -1230,6 +1285,86 @@ document.getElementById('saveSettingsBtn').addEventListener('click', async () =>
     toast.success('Settings saved');
   } catch (e) { toast.error(e.message); }
   finally { btn.disabled = false; btn.textContent = 'Save Changes'; }
+});
+
+// ── City/Municipality coverage ─────────────────────────────────────────────────
+let _allCities = [];
+let _selectedCities = [];
+let _citiesLoaded = false;
+
+async function loadCities() {
+  if (_citiesLoaded) return;
+  document.getElementById('cityLoadStatus').textContent = 'Loading cities from PSGC…';
+  try {
+    const [cities, munis] = await Promise.all([
+      fetch('https://psgc.gitlab.io/api/cities.json').then(r => r.json()),
+      fetch('https://psgc.gitlab.io/api/municipalities.json').then(r => r.json())
+    ]);
+    _allCities = [...cities, ...munis]
+      .map(x => x.name)
+      .filter(Boolean)
+      .sort((a, b) => a.localeCompare(b));
+    _citiesLoaded = true;
+    document.getElementById('cityLoadStatus').textContent = `${_allCities.length} cities/municipalities loaded.`;
+  } catch (e) {
+    document.getElementById('cityLoadStatus').textContent = 'Could not load cities. Check internet connection.';
+  }
+}
+
+function renderSelectedCities() {
+  const el = document.getElementById('selectedCitiesTags');
+  el.innerHTML = _selectedCities.map(c => `
+    <span class="city-tag">${c}
+      <button onclick="_selectedCities=_selectedCities.filter(x=>x!==decodeURIComponent('${encodeURIComponent(c)}'));renderSelectedCities()" title="Remove">✕</button>
+    </span>`).join('');
+}
+
+document.getElementById('citySearchInput').addEventListener('focus', loadCities);
+document.getElementById('citySearchInput').addEventListener('input', function() {
+  const q = this.value.trim().toLowerCase();
+  const dropdown = document.getElementById('cityDropdown');
+  if (!q || !_citiesLoaded) { dropdown.style.display = 'none'; return; }
+  const matches = _allCities.filter(c => c.toLowerCase().includes(q) && !_selectedCities.includes(c)).slice(0, 12);
+  if (!matches.length) { dropdown.style.display = 'none'; return; }
+  dropdown.innerHTML = matches.map(c =>
+    `<div style="padding:9px 14px;cursor:pointer;font-size:13px;border-bottom:1px solid #f9fafb;hover:background:#f5f3ff" onmousedown="addCity('${encodeURIComponent(c)}')">${c}</div>`
+  ).join('');
+  dropdown.style.display = '';
+});
+
+document.getElementById('citySearchInput').addEventListener('blur', () => {
+  setTimeout(() => { document.getElementById('cityDropdown').style.display = 'none'; }, 150);
+});
+
+function addCity(encoded) {
+  const name = decodeURIComponent(encoded);
+  if (!_selectedCities.includes(name)) _selectedCities.push(name);
+  renderSelectedCities();
+  document.getElementById('citySearchInput').value = '';
+  document.getElementById('cityDropdown').style.display = 'none';
+}
+
+document.getElementById('saveCoverageBtn').addEventListener('click', async () => {
+  const btn = document.getElementById('saveCoverageBtn');
+  btn.disabled = true; btn.textContent = 'Saving…';
+  try {
+    await api.put('/settings', { coverage_cities: _selectedCities });
+    toast.success(`Coverage saved — ${_selectedCities.length} area${_selectedCities.length !== 1 ? 's' : ''}`);
+  } catch (e) { toast.error(e.message); }
+  finally { btn.disabled = false; btn.textContent = 'Save Coverage'; }
+});
+
+document.getElementById('saveStoreOpsBtn').addEventListener('click', async () => {
+  const store_hours      = document.getElementById('storeHours').value.trim();
+  const store_hours_note = document.getElementById('storeHoursNote').value.trim();
+  const store_status     = document.querySelector('input[name="storeStatus"]:checked')?.value || 'open';
+  const btn = document.getElementById('saveStoreOpsBtn');
+  btn.disabled = true; btn.textContent = 'Saving…';
+  try {
+    await api.put('/settings', { store_hours, store_hours_note, store_status });
+    toast.success('Store operations saved');
+  } catch (e) { toast.error(e.message); }
+  finally { btn.disabled = false; btn.textContent = 'Save Store Operations'; }
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
