@@ -622,7 +622,7 @@ app.get('/manifest.json', ah(async (req, res) => {
         name: 'Order Now',
         short_name: 'Order',
         description: 'Quick access to place a new order',
-        url: '/?action=order',
+        url: '/orderform.html',
         icons: logo
           ? [{ src: '/icons/logo', sizes: '192x192', type: 'image/png' }]
           : [{ src: '/icons/icon.svg', sizes: 'any', type: 'image/svg+xml' }]
